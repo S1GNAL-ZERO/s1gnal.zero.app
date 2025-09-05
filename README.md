@@ -143,41 +143,133 @@ For consistent hackathon demonstrations:
 * PostgreSQL 14+
 * Maven 3.8+
 
+### Environment Configuration
+
+**Important**: Set up your environment variables before running the application.
+
+#### 1. Environment Files Overview
+
+| File | Purpose | Committed to Git |
+|------|---------|------------------|
+| `.env` | Your actual working environment (local) | ❌ No (gitignored) |
+| `.env.dev` | Development template | ✅ Yes (template) |
+| `.env.prod` | Production template | ✅ Yes (template) |
+| `agents/.env` | Python agents configuration | ❌ No (gitignored) |
+
+#### 2. Quick Setup for Development
+
+```bash
+# Copy development template to working file
+cp .env.dev .env
+
+# Copy agents template 
+cp agents/.env.example agents/.env  # (if available)
+# OR create agents/.env manually with Solace connection details
+```
+
+#### 3. Required Environment Variables
+
+**Critical (Must Set):**
+```bash
+# Database
+DB_URL=jdbc:postgresql://localhost:5432/signalzero
+DB_USERNAME=postgres
+DB_PASSWORD=your_postgres_password
+
+# Solace PubSub+
+SOLACE_HOST=tcp://localhost:55555
+SOLACE_USERNAME=admin
+SOLACE_PASSWORD=admin
+
+# Stripe (for payments)
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+```
+
+**Optional APIs (Add as available):**
+```bash
+# Reddit API (Free - https://www.reddit.com/prefs/apps)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+
+# YouTube API (Free quota - Google Cloud Console)
+YOUTUBE_API_KEY=AIzaSy_your_youtube_api_key_here
+
+# News API (Free tier - https://newsapi.org)
+NEWSAPI_KEY=your_newsapi_key_here
+
+# Twitter API ($100/month - https://developer.twitter.com)
+TWITTER_BEARER_TOKEN=AAAAAAAAAA_your_twitter_bearer_token_here
+```
+
+#### 4. Hackathon Quick Start (Demo Mode)
+
+For fastest setup during hackathon:
+
+```bash
+# Use development environment with demo mode enabled
+cp .env.dev .env
+
+# Edit .env and set:
+DEMO_MODE=true
+USE_MOCK_DATA=true
+HACKATHON_MODE=true
+AUTO_SEED_DATA=true
+
+# These settings enable:
+# - Hardcoded demo responses (Stanley Cup = 62% bots, 34% Reality Score)
+# - Mock data fallbacks when APIs unavailable
+# - Auto-populated Wall of Shame
+# - Bypass payment verification for testing
+```
+
 ### Quick Installation
 
 Follow the hour-by-hour timeline in [signalzero-timeline-claude.md](signalzero-timeline-claude.md) for detailed build instructions.
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/S1GNAL-ZERO/S1GNAL-ZERO.github.io.git
 cd S1GNAL-ZERO
 
-# Start Solace PubSub+ Docker
+# 2. Set up environment (IMPORTANT - do this first!)
+cp .env.dev .env
+# Edit .env with your database password and API keys
+
+# 3. Start Solace PubSub+ Docker
 docker run -d -p 55555:55555 -p 8080:8080 -p 1883:1883 \
   --shm-size=2g --env username_admin_globalaccesslevel=admin \
   --env username_admin_password=admin --name=solace \
   solace/solace-pubsub-standard
 
-# Set up PostgreSQL database
+# 4. Set up PostgreSQL database
 createdb signalzero
 psql signalzero < database/schema.sql
 psql signalzero < database/demo_data.sql
 
-# Start Spring Boot backend (port 8081)
+# 5. Start Spring Boot backend (port 8081)
 cd backend
 mvn clean install
 mvn spring-boot:run
 
-# Start Python agents (in new terminal)
+# 6. Start Python agents (in new terminal)
 cd agents
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python start_all_agents.py
 
-# Access the application
+# 7. Access the application
 open http://localhost:8081
 ```
+
+### 🔐 Security Notes
+
+- **Never commit actual `.env` files** - they contain sensitive API keys and passwords
+- The `.env.dev` and `.env.prod` files are templates with placeholder values
+- Actual environment files are properly gitignored for security
+- For production deployment, use secure secret management (AWS Secrets Manager, etc.)
 
 ## 📡 Solace Topic Structure
 
