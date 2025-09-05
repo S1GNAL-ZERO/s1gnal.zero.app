@@ -109,13 +109,15 @@ Copy exact configuration from Section 5.3 into `application.properties`
 1. `backend/src/main/java/io/signalzero/messaging/SolaceConsumer.java` (Section 8.2)
 2. `backend/src/main/java/io/signalzero/messaging/AgentResponseHandler.java`
 
-### 1:45-2:00 | Message Models
+### 1:45-2:00 | Message Models & Request/Response DTOs
 **Reference**: DETAILED_DESIGN.md Section 7.5
 
 **Files to Create**:
 1. `backend/src/main/java/io/signalzero/dto/AnalysisRequest.java`
 2. `backend/src/main/java/io/signalzero/dto/AgentResponse.java`
 3. `backend/src/main/java/io/signalzero/dto/AnalysisResponse.java`
+
+**Note**: These are lightweight message DTOs for Solace communication only. Core data access uses repository pattern with JPA entities.
 
 ---
 
@@ -171,12 +173,31 @@ Copy exact configuration from Section 5.3 into `application.properties`
 1. `backend/src/main/java/io/signalzero/SignalZeroApplication.java` (with @Push)
 2. `backend/src/main/resources/META-INF/resources/themes/signalzero/styles.css` (Vaadin theme)
 
-### 3:15-3:30 | Main Dashboard
-**Reference**: DETAILED_DESIGN.md Section 11.1
+### 3:15-3:30 | Main Dashboard with Repository Pattern
+**Reference**: DETAILED_DESIGN.md Section 11.1 & Section 8
 
 **Files to Create**:
-1. `backend/src/main/java/io/signalzero/ui/DashboardView.java` (Section 11.1)
+1. `backend/src/main/java/io/signalzero/ui/DashboardView.java` - Direct entity binding to Vaadin Grid
 2. `backend/src/main/java/io/signalzero/ui/components/RealityScoreGauge.java`
+
+**Repository Pattern in Vaadin**:
+```java
+@Route("")
+@Push
+public class DashboardView extends VerticalLayout {
+    @Autowired
+    private AnalysisRepository analysisRepository;
+    
+    private Grid<Analysis> analysisGrid;
+    
+    public DashboardView() {
+        // Grid directly bound to Analysis entities
+        analysisGrid = new Grid<>(Analysis.class);
+        analysisGrid.setItems(analysisRepository.findAllByIsPublicTrueOrderByCreatedAtDesc());
+        // No DTO conversion needed - work directly with entities
+    }
+}
+```
 
 ### 3:30-3:45 | Analysis View
 **Reference**: DETAILED_DESIGN.md Section 11.2

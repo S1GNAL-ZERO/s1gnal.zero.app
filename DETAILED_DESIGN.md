@@ -1250,16 +1250,19 @@ Hour 1: Core Backend
 
 ### Phase 2: Core Functionality (Hours 2-5)
 ```
-Hour 2: User System
-- Registration/login endpoints
-- Subscription management
-- Usage tracking service
+Hour 2: User System & Repository Layer
+- JPA entities (User, Analysis, AgentResult, WallOfShame)
+- Repository interfaces extending JpaRepository
+- Registration/login endpoints working directly with entities
+- Subscription management via UserRepository
+- Usage tracking service using repository queries
 
 Hour 3: Vaadin Flow UI (Server-Side Java)
-- Dashboard view (DashboardView.java)
-- Analysis form (server-side components)
-- Wall of Shame view (WallOfShameView.java)
+- Dashboard view (DashboardView.java) - direct entity binding
+- Analysis form with entity validation
+- Wall of Shame view (WallOfShameView.java) - repository-driven
 - WebSocket configuration via @Push annotation
+- Grid components bound to entity collections
 
 Hour 4-5: Python Agents
 - Base agent class
@@ -1541,11 +1544,6 @@ s1gnal-zero/
 │   │   │   │       │   │   ├── WallOfShame.java        # Wall of shame entity
 │   │   │   │       │   │   ├── Payment.java            # Payment entity
 │   │   │   │       │   │   └── Waitlist.java           # Waitlist entity
-│   │   │   │       │   ├── dto/
-│   │   │   │       │   │   ├── AnalysisRequest.java    # Analysis request DTO
-│   │   │   │       │   │   ├── AnalysisResponse.java   # Analysis response DTO
-│   │   │   │       │   │   ├── RealityScoreDTO.java    # Reality score DTO
-│   │   │   │       │   │   └── UserRegistrationDTO.java # Registration DTO
 │   │   │   │       │   └── enums/
 │   │   │   │       │       ├── SubscriptionTier.java   # FREE, PRO, BUSINESS, ENTERPRISE
 │   │   │   │       │       ├── AnalysisStatus.java     # PENDING, PROCESSING, COMPLETE
@@ -1651,13 +1649,14 @@ s1gnal-zero/
 ✅ frontend/index.html (with Stripe button)
 ```
 
-#### Hour 2-4: Core Backend Files
+#### Hour 2-4: Core Backend Files (Repository Pattern)
 ```
 ✅ SignalZeroApplication.java
-✅ User.java, Analysis.java (entities)
-✅ UserController.java, AnalysisController.java
-✅ UserService.java, AnalysisService.java
-✅ SolaceConfig.java, SolacePublisher.java
+✅ entities/User.java, entities/Analysis.java, entities/AgentResult.java
+✅ repositories/UserRepository.java, repositories/AnalysisRepository.java
+✅ controllers/UserController.java, controllers/AnalysisController.java
+✅ services/UserService.java, services/AnalysisService.java (work with repositories)
+✅ config/SolaceConfig.java, services/SolacePublisher.java
 ```
 
 #### Hour 4-6: Python Agent Files
@@ -1691,20 +1690,21 @@ These files are nice-to-have but not critical for demo:
 ❌ Unit tests (skip for hackathon)
 ```
 
-### 20.4 File Creation Order (Optimized for 12 Hours)
+### 20.4 File Creation Order (Optimized for Repository Pattern)
 
 1. **Hour 0**: Create `docker-compose.yml`, start services
-2. **Hour 1**: Create database schema, Spring Boot skeleton
-3. **Hour 2**: Create User & Analysis entities, basic controllers
-4. **Hour 3**: Create Solace configuration and publisher
-5. **Hour 4**: Create base Python agent and bot detector
-6. **Hour 5**: Create trend analyzer and score aggregator
-7. **Hour 6**: Create Solace consumer, wire up agents
-8. **Hour 7**: Create Vaadin dashboard view
-9. **Hour 8**: Create Wall of Shame, seed demo data
-10. **Hour 9**: Deploy landing page to GitHub Pages
-11. **Hour 10**: Test end-to-end, fix issues
-12. **Hour 11-12**: Practice demo, prepare backup data
+2. **Hour 1**: Create database schema, Spring Boot skeleton with JPA dependencies
+3. **Hour 2**: Create JPA entities (User, Analysis, AgentResult), repository interfaces
+4. **Hour 3**: Create services using repositories, basic controllers with entity binding
+5. **Hour 4**: Create Solace configuration and publisher working with entities
+6. **Hour 5**: Create base Python agent and bot detector
+7. **Hour 6**: Create trend analyzer and score aggregator
+8. **Hour 7**: Create Solace consumer, wire up agents to save via repositories
+9. **Hour 8**: Create Vaadin dashboard view with direct entity grids
+10. **Hour 9**: Create Wall of Shame using repository queries, seed demo data
+11. **Hour 10**: Deploy landing page to GitHub Pages
+12. **Hour 11**: Test end-to-end repository operations, fix issues
+13. **Hour 12**: Practice demo, prepare backup data
 
 ## 21. Success Criteria
 
