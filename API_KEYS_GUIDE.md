@@ -1,7 +1,7 @@
 # API Keys Setup - S1GNAL.ZERO
 
 Quick setup guide for hackathon APIs.
-
+test 
 ---
 
 ## 🔴 REQUIRED (Critical)
