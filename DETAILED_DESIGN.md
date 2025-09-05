@@ -74,7 +74,7 @@ This system is designed for rapid hackathon development with:
 
 | Component | Technology | Version | Purpose | Build Time |
 |-----------|------------|---------|---------|------------|
-| **Frontend** | Vaadin Flow | Latest | Real-time web UI with server push | 1 hour |
+| **Frontend** | Vaadin Flow | 24.2 | Server-side Java UI with real-time push | 1 hour |
 | **Backend** | Spring Boot | 3.x | REST API & business logic | 1 hour |
 | **Message Broker** | Solace PubSub+ | Docker | Event-driven communication | 15 min |
 | **AI Agents** | Python | 3.10+ | Multi-agent analysis system | 2 hours |
@@ -1236,13 +1236,13 @@ public class WallOfShameView extends VerticalLayout {
 ### Phase 1: Infrastructure (Hours 0-2)
 ```
 Hour 0: Setup & First Sale
-- Deploy landing page to GitHub Pages
+- Deploy static landing page to GitHub Pages (no build process)
 - Create Stripe payment link ($9.99)
 - Start Solace Docker container
 - Initialize PostgreSQL database
 
 Hour 1: Core Backend
-- Spring Boot project setup
+- Spring Boot project with Vaadin Flow setup
 - Database schema creation
 - Basic user authentication
 - Solace connection configuration
@@ -1255,11 +1255,11 @@ Hour 2: User System
 - Subscription management
 - Usage tracking service
 
-Hour 3: Vaadin UI
-- Dashboard view
-- Analysis form
-- Wall of Shame view
-- WebSocket configuration
+Hour 3: Vaadin Flow UI (Server-Side Java)
+- Dashboard view (DashboardView.java)
+- Analysis form (server-side components)
+- Wall of Shame view (WallOfShameView.java)
+- WebSocket configuration via @Push annotation
 
 Hour 4-5: Python Agents
 - Base agent class
@@ -1444,8 +1444,9 @@ python start_agents.py # Python agents
 ```
 
 ### 16.2 Demo Environment
-- Frontend: GitHub Pages (static)
-- Backend: Local laptop
+- Landing Page: GitHub Pages (static HTML/CSS/JS)
+- Main UI: Vaadin Flow (server-side, runs with Spring Boot)
+- Backend: Local laptop (Spring Boot + Vaadin)
 - Database: Local PostgreSQL
 - Agents: Local Python processes
 - Solace: Docker container
@@ -1593,13 +1594,16 @@ s1gnal-zero/
 │   ├── 04_seed_demo_data.sql          # Demo data for Wall of Shame
 │   └── reset_database.sh              # Script to reset database
 │
-├── frontend/                           # Static frontend files
-│   ├── index.html                     # Landing page with Stripe button
-│   ├── styles.css                     # Landing page styles
-│   ├── scripts.js                     # Landing page JavaScript
+├── frontend/                           # Static landing page (GitHub Pages)
+│   ├── index.html                     # Marketing landing page with Stripe
+│   ├── styles.css                     # Landing page styles (no build process)
+│   ├── scripts.js                     # Simple vanilla JavaScript
 │   └── assets/
 │       ├── logo.png                   # S1GNAL.ZERO logo
 │       └── demo-screenshot.png        # Demo screenshot for landing
+│
+│   # NOTE: Main UI is Vaadin Flow (server-side Java) in backend/views/
+│   # No Node.js, React, or separate frontend build process needed
 │
 ├── config/                             # Configuration files
 │   ├── docker-compose.yml             # Solace + PostgreSQL services

@@ -20,7 +20,7 @@ Refer to **DETAILED_DESIGN.md Section 21.1** for complete environment setup.
 ### Required Downloads
 - [ ] Solace Java JCSMP samples from GitHub
 - [ ] Solace Python samples from GitHub
-- [ ] Spring Initializr accessible
+- [ ] Spring Initializr accessible (for Vaadin Flow project)
 
 ---
 
@@ -59,13 +59,15 @@ psql -d signalzero < database/schema.sql
 ### 0:30-0:45 | Spring Boot Project
 **Reference**: DETAILED_DESIGN.md Section 7 & Section 20.2
 
-**Claude Task: Generate Spring Boot project**
+**Claude Task: Generate Spring Boot project with Vaadin Flow**
 ```bash
-# Use exact structure from Section 20.2
+# Use exact structure from Section 20.2 - Vaadin Flow (server-side Java UI)
 spring init --dependencies=web,data-jpa,postgresql,security,actuator,websocket,validation,lombok \
   --groupId=io.signalzero --artifactId=backend \
   --name=SignalZero --package-name=io.signalzero \
   --java-version=17 backend
+
+# Add Vaadin Flow dependency to pom.xml (Section 7.1)
 ```
 
 **Files Created**:
@@ -158,14 +160,16 @@ Copy exact configuration from Section 5.3 into `application.properties`
 
 ---
 
-## 🎨 HOUR 3: VAADIN UI (3:00-4:00)
+## 🎨 HOUR 3: VAADIN FLOW UI - SERVER-SIDE JAVA (3:00-4:00)
 
-### 3:00-3:15 | Vaadin Setup
+### 3:00-3:15 | Vaadin Flow Setup
 **Reference**: DETAILED_DESIGN.md Section 11
+
+**Important**: Vaadin Flow is server-side Java - NO Node.js, React, or separate frontend build
 
 **Files to Create**:
 1. `backend/src/main/java/io/signalzero/SignalZeroApplication.java` (with @Push)
-2. `frontend/themes/signalzero/styles.css` (Section 11.4)
+2. `backend/src/main/resources/META-INF/resources/themes/signalzero/styles.css` (Vaadin theme)
 
 ### 3:15-3:30 | Main Dashboard
 **Reference**: DETAILED_DESIGN.md Section 11.1
@@ -323,10 +327,11 @@ agents/
 - Skip automation agents
 - Focus on core functionality
 
-### Landing Page (Hour 11)
+### Static Landing Page (Hour 11) 
 **Reference**: DETAILED_DESIGN.md Section 18
-- Copy exact HTML/CSS from Section 18
-- Deploy to GitHub Pages
+- Separate marketing page (static HTML/CSS/JS)
+- Deploy to GitHub Pages (marketing only)
+- Main app UI is Vaadin Flow (runs with Spring Boot)
 
 ---
 
@@ -381,11 +386,11 @@ From DETAILED_DESIGN.md Section 13:
 
 Per DETAILED_DESIGN.md Section 20.4, you should have:
 - **Backend**: 35+ Java files
-- **Frontend**: 5+ Vaadin views  
+- **Frontend**: 5+ Vaadin Flow views (server-side Java)
 - **Agents**: 10+ Python files
 - **Database**: 2 SQL files
 - **Config**: 5+ configuration files
-- **Static**: 3 landing page files
+- **Landing Page**: 3 static files (separate from Vaadin UI)
 
 **Total**: ~73 files minimum
 
