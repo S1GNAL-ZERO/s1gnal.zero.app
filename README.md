@@ -89,7 +89,7 @@ For consistent hackathon demonstrations:
 * **Event Broker**: Solace PubSub+ for real-time messaging
 * **Backend**: Spring Boot 3.0+ (Java 17) with Solace JCSMP
 * **AI Agents**: Python 3.10+ with Solace Python API
-* **Frontend**: Vaadin 24.2 with @Push for real-time updates
+* **Frontend**: Vaadin Flow 24.2 (server-side Java UI) with @Push for real-time updates
 * **Database**: PostgreSQL 14+ with UUID primary keys
 * **Deployment**: Docker containers for all services
 
@@ -142,7 +142,6 @@ For consistent hackathon demonstrations:
 * Python 3.10+
 * PostgreSQL 14+
 * Maven 3.8+
-* Node.js 18+ (for Vaadin)
 
 ### Quick Installation
 
@@ -277,7 +276,7 @@ S1GNAL-ZERO/
 ├── database/          (2 SQL files)
 │   ├── schema.sql     (8 tables, views, functions)
 │   └── demo_data.sql  (Seed data)
-├── frontend/          (Vaadin theme)
+├── frontend/          (Vaadin Flow themes & resources)
 └── docs/              (Landing page)
 ```
 
