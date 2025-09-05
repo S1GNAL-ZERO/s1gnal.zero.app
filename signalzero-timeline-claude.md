@@ -109,15 +109,36 @@ Copy exact configuration from Section 5.3 into `application.properties`
 1. `backend/src/main/java/io/signalzero/messaging/SolaceConsumer.java` (Section 8.2)
 2. `backend/src/main/java/io/signalzero/messaging/AgentResponseHandler.java`
 
-### 1:45-2:00 | Message Models & Request/Response DTOs
-**Reference**: DETAILED_DESIGN.md Section 7.5
+### 1:45-2:00 | Solace Message Models (Entity-Based)
+**Reference**: DETAILED_DESIGN.md Section 8 - Repository Pattern
 
 **Files to Create**:
-1. `backend/src/main/java/io/signalzero/dto/AnalysisRequest.java`
-2. `backend/src/main/java/io/signalzero/dto/AgentResponse.java`
-3. `backend/src/main/java/io/signalzero/dto/AnalysisResponse.java`
+1. `backend/src/main/java/io/signalzero/messaging/AnalysisRequestMessage.java` - Simple message wrapper
+2. `backend/src/main/java/io/signalzero/messaging/AgentResponseMessage.java` - Agent result wrapper
+3. `backend/src/main/java/io/signalzero/messaging/MessageUtils.java` - Entity serialization utilities
 
-**Note**: These are lightweight message DTOs for Solace communication only. Core data access uses repository pattern with JPA entities.
+**Repository Pattern**: Even Solace messages work with entities. No DTOs anywhere in the system.
+```java
+// Message classes work with entities directly
+public class AnalysisRequestMessage {
+    private String analysisId;
+    private String userId; 
+    private String query;
+    // Convert to/from Analysis entity
+}
+
+// Services convert messages to entities immediately
+@Service
+public class SolaceConsumer {
+    @Autowired
+    private AnalysisRepository analysisRepository;
+    
+    public void handleMessage(AnalysisRequestMessage message) {
+        Analysis analysis = analysisRepository.findById(UUID.fromString(message.getAnalysisId()));
+        // Work with entity throughout
+    }
+}
+```
 
 ---
 
@@ -133,13 +154,26 @@ Copy exact configuration from Section 5.3 into `application.properties`
 4. `backend/src/main/java/io/signalzero/model/SubscriptionTier.java` (enum)
 5. `backend/src/main/java/io/signalzero/model/AnalysisStatus.java` (enum)
 
-### 2:15-2:30 | Repositories
-**Reference**: DETAILED_DESIGN.md Section 7.4
+### 2:15-2:30 | Repository Interfaces (Pure Data Access Layer)
+**Reference**: DETAILED_DESIGN.md Section 8 - Repository-Based Data Access Pattern
 
 **Files to Create**:
-1. `backend/src/main/java/io/signalzero/repository/UserRepository.java`
-2. `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java`
-3. `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java`
+1. `backend/src/main/java/io/signalzero/repository/UserRepository.java` - extends JpaRepository<User, UUID>
+2. `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - extends JpaRepository<Analysis, UUID>
+3. `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - extends JpaRepository<AgentResult, UUID>
+4. `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - extends JpaRepository<WallOfShame, UUID>
+
+**No DTOs Anywhere**: All data operations work directly with JPA entities through repository methods.
+```java
+public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
+    List<Analysis> findByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<Analysis> findByIsPublicTrueOrderByCreatedAtDesc();
+    List<Analysis> findByBotPercentageGreaterThan(BigDecimal threshold);
+    
+    @Query("SELECT a FROM Analysis a WHERE a.realityScore < :score")
+    List<Analysis> findManipulatedAnalyses(@Param("score") BigDecimal score);
+}
+```
 
 ### 2:30-2:45 | Core Services
 **Reference**: DETAILED_DESIGN.md Section 9
