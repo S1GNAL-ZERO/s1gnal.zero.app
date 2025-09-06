@@ -233,3 +233,6 @@ database.properties
 analysis-*.json
 temp-analysis/
 scratch/
+
+# Claude development timeline (contains internal build instructions)
+signalzero-timeline-claude.md
