@@ -15,6 +15,7 @@ public class SolaceProperties {
     private String username = "admin";
     private String password = "admin";
     private String vpnName = "default";
+    private String queueName = "signalzero-queue";
     private boolean compressionEnabled = false;
     private int reconnectRetries = 3;
     private int connectTimeoutMs = 30000;
@@ -60,6 +61,14 @@ public class SolaceProperties {
     
     public void setVpnName(String vpnName) {
         this.vpnName = vpnName;
+    }
+    
+    public String getQueueName() {
+        return queueName;
+    }
+    
+    public void setQueueName(String queueName) {
+        this.queueName = queueName;
     }
     
     public boolean isCompressionEnabled() {
