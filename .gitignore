@@ -119,3 +119,117 @@ config/api_keys.properties
 
 # Stripe keys
 stripe_keys.txt
+
+# =============================================================================
+# S1GNAL.ZERO PROJECT SPECIFIC
+# =============================================================================
+
+# Vaadin Flow generated files
+backend/frontend/generated/
+backend/node_modules/
+backend/package-lock.json
+backend/webpack.config.js
+backend/webpack.generated.js
+backend/tsconfig.json
+backend/types.d.ts
+backend/vite.config.ts
+backend/vite.generated.ts
+
+# Spring Boot
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# Solace samples (external repositories)
+solace-samples-java/
+solace-samples-python/
+
+# Agent logs and runtime files
+agents/logs/
+agents/tmp/
+agents/cache/
+agents/data/
+agents/*.log
+agents/.pytest_cache/
+
+# Database files
+database/*.backup
+database/dump.sql
+database/restore.sql
+
+# IDE specific
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*.tmp
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Documentation builds
+docs/_build/
+docs/build/
+
+# Deployment
+deploy/
+dist/
+build/
+
+# Local configuration overrides
+local.properties
+local-config.json
+dev-override.properties
+
+# Never commit these sensitive files
+**/.env
+**/.env.local
+**/.env.production
+**/.env.test
+**/secrets.json
+**/api-keys.json
+**/credentials.json
+**/service-account.json
+
+# Solace connection details (if not in .env)
+solace-config.properties
+broker-config.json
+
+# Database connection strings (if not in .env)
+db-config.properties
+database.properties
+
+# SSL certificates and keys
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# Temporary analysis files
+analysis-*.json
+temp-analysis/
+scratch/
