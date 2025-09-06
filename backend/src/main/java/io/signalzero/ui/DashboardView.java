@@ -57,7 +57,7 @@ import java.util.concurrent.CompletableFuture;
  * 
  * Reference: DETAILED_DESIGN.md Section 11 - Vaadin UI Components
  */
-@Route("")
+@Route(value = "", layout = MainLayout.class)
 @PageTitle("S1GNAL.ZERO Dashboard - AI-Powered Authenticity Verification")
 @AnonymousAllowed
 public class DashboardView extends VerticalLayout {
@@ -89,37 +89,10 @@ public class DashboardView extends VerticalLayout {
      * Uses repository pattern with direct JPA entity binding throughout.
      */
     public DashboardView() {
-        addClassName("app");
+        addClassName("dashboard-view");
         setSizeFull();
-        setPadding(false);
-        setSpacing(false);
-        setMargin(false);
-        
-        // Set up CSS custom properties for theming
-        getElement().getStyle().set("--bg", "#0b1020");
-        getElement().getStyle().set("--panel", "#11162a");
-        getElement().getStyle().set("--panel-2", "#131a33");
-        getElement().getStyle().set("--ink", "#e8ecff");
-        getElement().getStyle().set("--muted", "#a6b0d8");
-        getElement().getStyle().set("--brand", "#667eea");
-        getElement().getStyle().set("--brand-2", "#764ba2");
-        getElement().getStyle().set("--ok", "#10b981");
-        getElement().getStyle().set("--warn", "#f59e0b");
-        getElement().getStyle().set("--bad", "#ef4444");
-        getElement().getStyle().set("--accent", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
-        getElement().getStyle().set("--radius", "16px");
-        getElement().getStyle().set("--shadow", "0 20px 60px rgba(0,0,0,.35)");
-        
-        // Apply dark theme background
-        getStyle().set("background", "radial-gradient(1000px 600px at 10% -10%, rgba(102,126,234,.25), transparent 40%), radial-gradient(800px 600px at 90% -20%, rgba(118,75,162,.25), transparent 40%), var(--bg)");
-        getStyle().set("color", "var(--ink)");
-        getStyle().set("font-family", "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif");
-        
-        // Set up the main grid layout to match mockup
-        getStyle().set("display", "grid");
-        getStyle().set("grid-template-columns", "280px 1fr");
-        getStyle().set("grid-template-rows", "72px 1fr");
-        getStyle().set("min-height", "100vh");
+        setPadding(true);
+        setSpacing(true);
         
         // Initialize the query field first
         queryField = new TextField();
@@ -129,214 +102,12 @@ public class DashboardView extends VerticalLayout {
         queryField.setClearButtonVisible(true);
         queryField.setHelperText("Try: 'Stanley Cup', 'Prime Energy', '$BUZZ', or any viral product");
         
-        createHeader();
-        createSidebar();
         createMainContent();
         
         // Load initial data from repository
         refreshDashboardData();
     }
 
-    /**
-     * Create the top bar matching the UI mockup design.
-     */
-    private void createHeader() {
-        HorizontalLayout topBar = new HorizontalLayout();
-        topBar.addClassName("topbar");
-        topBar.setWidthFull();
-        topBar.setAlignItems(Alignment.CENTER);
-        topBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        topBar.setPadding(true);
-        topBar.getStyle().set("background", "var(--panel)");
-        topBar.getStyle().set("box-shadow", "var(--shadow)");
-        topBar.getStyle().set("z-index", "5");
-        
-        // Position topbar to span both columns
-        topBar.getStyle().set("grid-column", "1 / 3");
-        topBar.getStyle().set("grid-row", "1");
-        
-        // Logo section
-        HorizontalLayout logoSection = new HorizontalLayout();
-        logoSection.addClassName("logo");
-        logoSection.setAlignItems(Alignment.CENTER);
-        logoSection.setSpacing(true);
-        
-        // Logo badge
-        Div logoBadge = createBinaryShieldLogo();
-        logoBadge.addClassName("logo-badge");
-        logoBadge.getStyle().set("width", "40px");
-        logoBadge.getStyle().set("height", "40px");
-        logoBadge.getStyle().set("border-radius", "12px");
-        logoBadge.getStyle().set("background", "var(--accent)");
-        logoBadge.getStyle().set("display", "grid");
-        logoBadge.getStyle().set("place-items", "center");
-        logoBadge.getStyle().set("box-shadow", "0 10px 25px rgba(102,126,234,.35)");
-        
-        // Logo text
-        VerticalLayout logoText = new VerticalLayout();
-        logoText.setSpacing(false);
-        logoText.setPadding(false);
-        
-        Span brandName = new Span("S1GNAL.ZERO");
-        brandName.getStyle().set("font-size", "14px");
-        brandName.getStyle().set("color", "var(--muted)");
-        brandName.getStyle().set("font-weight", "700");
-        brandName.getStyle().set("letter-spacing", ".12em");
-        
-        Span tagline = new Span("AI-Powered Authenticity Verification");
-        tagline.getStyle().set("font-size", "18px");
-        tagline.getStyle().set("font-weight", "800");
-        tagline.getStyle().set("line-height", "1");
-        
-        logoText.add(brandName, tagline);
-        logoSection.add(logoBadge, logoText);
-        
-        // Search bar
-        HorizontalLayout searchBar = new HorizontalLayout();
-        searchBar.addClassName("search");
-        searchBar.setAlignItems(Alignment.CENTER);
-        searchBar.getStyle().set("background", "#0e1430");
-        searchBar.getStyle().set("border", "1px solid #263061");
-        searchBar.getStyle().set("border-radius", "12px");
-        searchBar.getStyle().set("padding", "10px 12px");
-        searchBar.getStyle().set("min-width", "360px");
-        searchBar.getStyle().set("color", "var(--muted)");
-        
-        TextField searchInput = new TextField();
-        searchInput.setPlaceholder("Search history, trends, influencers…");
-        searchInput.addClassName("search-input");
-        searchInput.getStyle().set("background", "transparent");
-        searchInput.getStyle().set("border", "none");
-        searchInput.getStyle().set("color", "var(--ink)");
-        searchInput.getStyle().set("width", "100%");
-        
-        searchBar.add(searchInput);
-        
-        // User section
-        HorizontalLayout userSection = new HorizontalLayout();
-        userSection.addClassName("user");
-        userSection.setAlignItems(Alignment.CENTER);
-        userSection.setSpacing(true);
-        
-        Span techChip = new Span("Java + Agent Mesh");
-        techChip.addClassName("chip");
-        techChip.getStyle().set("padding", "3px 8px");
-        techChip.getStyle().set("border-radius", "999px");
-        techChip.getStyle().set("font-size", "11px");
-        techChip.getStyle().set("background", "#1a2149");
-        techChip.getStyle().set("color", "#8aa0ff");
-        techChip.getStyle().set("border", "1px solid #2b376f");
-        
-        Div avatar = new Div();
-        avatar.addClassName("avatar");
-        avatar.getStyle().set("width", "36px");
-        avatar.getStyle().set("height", "36px");
-        avatar.getStyle().set("border-radius", "50%");
-        avatar.getStyle().set("background", "linear-gradient(135deg,#93c5fd,#a78bfa)");
-        
-        userSection.add(techChip, avatar);
-        
-        topBar.add(logoSection, searchBar, userSection);
-        add(topBar);
-    }
-    
-    /**
-     * Create sidebar navigation matching the UI mockup design.
-     */
-    private void createSidebar() {
-        VerticalLayout sidebar = new VerticalLayout();
-        sidebar.addClassName("sidebar");
-        sidebar.setPadding(true);
-        sidebar.setSpacing(true);
-        sidebar.getStyle().set("background", "var(--panel)");
-        sidebar.getStyle().set("border-right", "1px solid #1b2452");
-        sidebar.getStyle().set("grid-row", "1 / 3"); // Span both rows
-        
-        // Navigation title
-        Span navTitle = new Span("Navigation");
-        navTitle.addClassName("nav-title");
-        navTitle.getStyle().set("font-size", "12px");
-        navTitle.getStyle().set("letter-spacing", ".12em");
-        navTitle.getStyle().set("color", "var(--muted)");
-        navTitle.getStyle().set("text-transform", "uppercase");
-        navTitle.getStyle().set("margin", "6px 10px");
-        
-        // Navigation items
-        VerticalLayout navItems = new VerticalLayout();
-        navItems.addClassName("nav");
-        navItems.setSpacing(true);
-        navItems.setPadding(false);
-        
-        // Dashboard link (active)
-        HorizontalLayout dashboardLink = createNavLink("📊", "Dashboard", true);
-        HorizontalLayout analyzeLink = createNavLink("🔍", "Analyze", false);
-        HorizontalLayout historyLink = createNavLink("🕘", "History", false);
-        HorizontalLayout agentsLink = createNavLink("🤖", "Agents", false);
-        HorizontalLayout dataLink = createNavLink("🔗", "Data Sources", false);
-        HorizontalLayout adminLink = createNavLink("⚙️", "Admin", false);
-        
-        navItems.add(dashboardLink, analyzeLink, historyLink, agentsLink, dataLink, adminLink);
-        
-        // Quick Actions
-        Span actionsTitle = new Span("Quick Actions");
-        actionsTitle.addClassName("nav-title");
-        actionsTitle.getStyle().set("font-size", "12px");
-        actionsTitle.getStyle().set("letter-spacing", ".12em");
-        actionsTitle.getStyle().set("color", "var(--muted)");
-        actionsTitle.getStyle().set("text-transform", "uppercase");
-        actionsTitle.getStyle().set("margin", "16px 10px 6px 10px");
-        
-        // Quick action buttons
-        Button demoButton = new Button("Run Demo Analysis");
-        demoButton.addClassName("btn");
-        demoButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        demoButton.addClickListener(e -> {
-            queryField.setValue("Stanley Cup tumbler");
-            performAnalysis();
-        });
-        
-        Button memeButton = new Button("Load Meme-Stock Scenario");
-        memeButton.addClassName("btn");
-        memeButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        memeButton.addClickListener(e -> queryField.setValue("$BUZZ meme stock"));
-        
-        // Position sidebar to span both rows in column 1
-        sidebar.getStyle().set("grid-column", "1");
-        sidebar.getStyle().set("grid-row", "2");
-        sidebar.getStyle().set("padding-top", "35px");
-        
-        sidebar.add(navTitle, navItems, actionsTitle, demoButton, memeButton);
-        add(sidebar);
-    }
-    
-    /**
-     * Create a navigation link component.
-     */
-    private HorizontalLayout createNavLink(String icon, String label, boolean isActive) {
-        HorizontalLayout link = new HorizontalLayout();
-        link.addClassName("nav-link");
-        link.setAlignItems(Alignment.CENTER);
-        link.setSpacing(true);
-        link.getStyle().set("padding", "12px 14px");
-        link.getStyle().set("border-radius", "12px");
-        link.getStyle().set("cursor", "pointer");
-        
-        if (isActive) {
-            link.addClassName("active");
-            link.getStyle().set("background", "linear-gradient(135deg, rgba(102,126,234,.18), rgba(118,75,162,.18))");
-            link.getStyle().set("color", "#fff");
-            link.getStyle().set("border", "1px solid #2b376f");
-        } else {
-            link.getStyle().set("color", "var(--muted)");
-        }
-        
-        Span iconSpan = new Span(icon);
-        Span labelSpan = new Span(label);
-        labelSpan.addClassName("label");
-        
-        link.add(iconSpan, labelSpan);
-        return link;
-    }
     
     /**
      * Create main content area matching the mockup design.
