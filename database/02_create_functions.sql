@@ -8,7 +8,7 @@
 
 -- Function to calculate Reality Score using exact weights from DETAILED_DESIGN.md
 -- Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%
-CREATE OR REPLACE FUNCTION calculate_reality_score(
+CREATE OR REPLACE FUNCTION signalzero.calculate_reality_score(
     bot_score DECIMAL,
     trend_score DECIMAL,
     review_score DECIMAL,
@@ -21,7 +21,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to classify manipulation level based on Reality Score
-CREATE OR REPLACE FUNCTION classify_manipulation(score DECIMAL) 
+CREATE OR REPLACE FUNCTION signalzero.classify_manipulation(score DECIMAL) 
 RETURNS VARCHAR AS $$
 BEGIN
     IF score >= 67 THEN
@@ -39,18 +39,18 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Trigger function to automatically update manipulation level when Reality Score changes
-CREATE OR REPLACE FUNCTION update_manipulation_level()
+CREATE OR REPLACE FUNCTION signalzero.update_manipulation_level()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.reality_score IS NOT NULL THEN
-        NEW.manipulation_level = classify_manipulation(NEW.reality_score);
+        NEW.manipulation_level = signalzero.classify_manipulation(NEW.reality_score);
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION signalzero.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
@@ -59,7 +59,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger function to automatically add products to Wall of Shame
-CREATE OR REPLACE FUNCTION auto_add_to_wall_of_shame()
+CREATE OR REPLACE FUNCTION signalzero.auto_add_to_wall_of_shame()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Add to Wall of Shame if bot percentage > 60% and analysis is complete
@@ -108,7 +108,7 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Function to reset monthly usage for all users (called by scheduled job)
-CREATE OR REPLACE FUNCTION reset_monthly_usage()
+CREATE OR REPLACE FUNCTION signalzero.reset_monthly_usage()
 RETURNS void AS $$
 BEGIN
     UPDATE signalzero.users 
@@ -119,7 +119,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to increment user's usage count
-CREATE OR REPLACE FUNCTION increment_user_usage(user_uuid UUID)
+CREATE OR REPLACE FUNCTION signalzero.increment_user_usage(user_uuid UUID)
 RETURNS void AS $$
 BEGIN
     UPDATE signalzero.users 
@@ -130,7 +130,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to check if user is within usage limits
-CREATE OR REPLACE FUNCTION check_usage_limit(user_uuid UUID)
+CREATE OR REPLACE FUNCTION signalzero.check_usage_limit(user_uuid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     current_usage INT;
@@ -161,7 +161,7 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Function to get system-wide analytics
-CREATE OR REPLACE FUNCTION get_system_metrics()
+CREATE OR REPLACE FUNCTION signalzero.get_system_metrics()
 RETURNS TABLE(
     total_users BIGINT,
     paid_users BIGINT,
@@ -189,7 +189,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to get top manipulated products for Wall of Shame
-CREATE OR REPLACE FUNCTION get_top_manipulated_products(limit_count INT DEFAULT 10)
+CREATE OR REPLACE FUNCTION signalzero.get_top_manipulated_products(limit_count INT DEFAULT 10)
 RETURNS TABLE(
     id UUID,
     product_name VARCHAR,
@@ -224,7 +224,7 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Function to process referral when user signs up
-CREATE OR REPLACE FUNCTION process_referral(new_user_id UUID, referrer_code VARCHAR)
+CREATE OR REPLACE FUNCTION signalzero.process_referral(new_user_id UUID, referrer_code VARCHAR)
 RETURNS void AS $$
 DECLARE
     referrer_user_id UUID;
@@ -253,7 +253,7 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Function to clean up old temporary data
-CREATE OR REPLACE FUNCTION cleanup_old_data()
+CREATE OR REPLACE FUNCTION signalzero.cleanup_old_data()
 RETURNS void AS $$
 BEGIN
     -- Delete old incomplete analyses (older than 24 hours)
@@ -289,7 +289,7 @@ CREATE TRIGGER trg_update_manipulation
     BEFORE INSERT OR UPDATE ON signalzero.analyses
     FOR EACH ROW
     WHEN (NEW.reality_score IS NOT NULL)
-    EXECUTE FUNCTION update_manipulation_level();
+    EXECUTE FUNCTION signalzero.update_manipulation_level();
 
 -- Trigger to automatically add high-bot products to Wall of Shame
 DROP TRIGGER IF EXISTS trg_auto_wall_of_shame ON signalzero.analyses;
@@ -297,28 +297,28 @@ CREATE TRIGGER trg_auto_wall_of_shame
     AFTER INSERT OR UPDATE ON signalzero.analyses
     FOR EACH ROW
     WHEN (NEW.status = 'COMPLETE' AND NEW.bot_percentage > 60)
-    EXECUTE FUNCTION auto_add_to_wall_of_shame();
+    EXECUTE FUNCTION signalzero.auto_add_to_wall_of_shame();
 
 -- Trigger to update updated_at timestamp on users table
 DROP TRIGGER IF EXISTS trg_users_updated_at ON signalzero.users;
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON signalzero.users
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION signalzero.update_updated_at_column();
 
 -- Trigger to update updated_at timestamp on wall_of_shame table
 DROP TRIGGER IF EXISTS trg_wall_of_shame_updated_at ON signalzero.wall_of_shame;
 CREATE TRIGGER trg_wall_of_shame_updated_at
     BEFORE UPDATE ON signalzero.wall_of_shame
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION signalzero.update_updated_at_column();
 
 -- =============================================================================
 -- MATERIALIZED VIEWS FOR PERFORMANCE
 -- =============================================================================
 
 -- Materialized view for dashboard metrics (refresh hourly)
-CREATE MATERIALIZED VIEW IF NOT EXISTS mv_hourly_metrics AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS signalzero.mv_hourly_metrics AS
 SELECT 
     DATE_TRUNC('hour', created_at) as hour,
     COUNT(*) as analyses_count,
@@ -333,13 +333,13 @@ ORDER BY hour DESC;
 
 -- Index on materialized view
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_hourly_metrics_hour 
-ON mv_hourly_metrics(hour DESC);
+ON signalzero.mv_hourly_metrics(hour DESC);
 
 -- Function to refresh materialized views
-CREATE OR REPLACE FUNCTION refresh_materialized_views()
+CREATE OR REPLACE FUNCTION signalzero.refresh_materialized_views()
 RETURNS void AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_hourly_metrics;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY signalzero.mv_hourly_metrics;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -348,7 +348,7 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Function to generate demo Reality Score based on hardcoded values
-CREATE OR REPLACE FUNCTION get_demo_reality_score(query_text TEXT)
+CREATE OR REPLACE FUNCTION signalzero.get_demo_reality_score(query_text TEXT)
 RETURNS DECIMAL AS $$
 BEGIN
     CASE 
@@ -363,7 +363,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to generate demo bot percentage based on hardcoded values
-CREATE OR REPLACE FUNCTION get_demo_bot_percentage(query_text TEXT)
+CREATE OR REPLACE FUNCTION signalzero.get_demo_bot_percentage(query_text TEXT)
 RETURNS DECIMAL AS $$
 BEGIN
     CASE 
@@ -381,9 +381,9 @@ $$ LANGUAGE plpgsql;
 -- COMMENTS FOR DOCUMENTATION
 -- =============================================================================
 
-COMMENT ON FUNCTION calculate_reality_score(DECIMAL, DECIMAL, DECIMAL, DECIMAL) IS 'Calculates Reality Score™ using exact weights: Bot 40%, Trend 30%, Review 20%, Promotion 10%';
-COMMENT ON FUNCTION classify_manipulation(DECIMAL) IS 'Classifies manipulation level: RED (0-33%), YELLOW (34-66%), GREEN (67-100%)';
-COMMENT ON FUNCTION check_usage_limit(UUID) IS 'Checks if user is within monthly usage limits based on subscription tier';
-COMMENT ON FUNCTION get_demo_reality_score(TEXT) IS 'Returns hardcoded demo Reality Scores for consistent hackathon demonstrations';
+COMMENT ON FUNCTION signalzero.calculate_reality_score(DECIMAL, DECIMAL, DECIMAL, DECIMAL) IS 'Calculates Reality Score™ using exact weights: Bot 40%, Trend 30%, Review 20%, Promotion 10%';
+COMMENT ON FUNCTION signalzero.classify_manipulation(DECIMAL) IS 'Classifies manipulation level: RED (0-33%), YELLOW (34-66%), GREEN (67-100%)';
+COMMENT ON FUNCTION signalzero.check_usage_limit(UUID) IS 'Checks if user is within monthly usage limits based on subscription tier';
+COMMENT ON FUNCTION signalzero.get_demo_reality_score(TEXT) IS 'Returns hardcoded demo Reality Scores for consistent hackathon demonstrations';
 
 -- Functions and triggers creation complete

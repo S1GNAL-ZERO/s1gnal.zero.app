@@ -12,7 +12,7 @@ INSERT INTO signalzero.users (email, password_hash, full_name, subscription_tier
 ('founder@s1gnalzero.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Founder Account', 'ENTERPRISE', 'FOUNDER', true, true),
 ('free@example.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Free User', 'FREE', 'FREE123', true, true),
 ('business@company.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Business User', 'BUSINESS', 'BIZ2024', true, true),
-('public@viewer.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Public Viewer', 'PUBLIC', 'PUBLIC01', true, true)
+('viewer@example.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Public Viewer', 'FREE', 'VIEWER01', true, true)
 ON CONFLICT (email) DO NOTHING;
 
 -- =============================================================================
@@ -328,7 +328,7 @@ WHERE email = 'free@example.com';
 -- =============================================================================
 
 -- Refresh materialized views with new data
-REFRESH MATERIALIZED VIEW mv_hourly_metrics;
+REFRESH MATERIALIZED VIEW signalzero.mv_hourly_metrics;
 
 -- =============================================================================
 -- VERIFY DATA INSERTION

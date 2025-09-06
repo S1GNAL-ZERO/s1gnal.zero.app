@@ -7,7 +7,7 @@
 -- =============================================================================
 
 -- View for public Wall of Shame display
-CREATE OR REPLACE VIEW v_wall_of_shame AS
+CREATE OR REPLACE VIEW signalzero.v_wall_of_shame AS
 SELECT 
     w.id,
     w.product_name,
@@ -38,7 +38,7 @@ ORDER BY
     w.created_at DESC;
 
 -- View for Wall of Shame with engagement metrics
-CREATE OR REPLACE VIEW v_wall_of_shame_trending AS
+CREATE OR REPLACE VIEW signalzero.v_wall_of_shame_trending AS
 SELECT 
     w.*,
     a.query,
@@ -61,7 +61,7 @@ ORDER BY engagement_score DESC, w.created_at DESC;
 -- =============================================================================
 
 -- View for user dashboard analytics
-CREATE OR REPLACE VIEW v_user_analyses AS
+CREATE OR REPLACE VIEW signalzero.v_user_analyses AS
 SELECT 
     a.id,
     a.user_id,
@@ -99,7 +99,7 @@ WHERE a.status = 'COMPLETE'
 ORDER BY a.created_at DESC;
 
 -- View for user subscription analytics
-CREATE OR REPLACE VIEW v_user_subscription_metrics AS
+CREATE OR REPLACE VIEW signalzero.v_user_subscription_metrics AS
 SELECT 
     u.id,
     u.email,
@@ -159,7 +159,7 @@ ORDER BY u.created_at DESC;
 -- =============================================================================
 
 -- View for system-wide metrics and KPIs
-CREATE OR REPLACE VIEW v_system_metrics AS
+CREATE OR REPLACE VIEW signalzero.v_system_metrics AS
 SELECT 
     -- User metrics
     COUNT(DISTINCT u.id) as total_users,
@@ -209,7 +209,7 @@ LEFT JOIN signalzero.wall_of_shame w ON a.id = w.analysis_id AND w.is_active = t
 -- =============================================================================
 
 -- View for agent performance analytics
-CREATE OR REPLACE VIEW v_agent_performance AS
+CREATE OR REPLACE VIEW signalzero.v_agent_performance AS
 SELECT 
     ar.agent_type,
     ar.agent_version,
@@ -253,7 +253,7 @@ ORDER BY ar.agent_type, ar.agent_version DESC;
 -- =============================================================================
 
 -- View for payment and revenue analytics
-CREATE OR REPLACE VIEW v_payment_metrics AS
+CREATE OR REPLACE VIEW signalzero.v_payment_metrics AS
 SELECT 
     p.payment_type,
     p.currency,
@@ -287,7 +287,7 @@ ORDER BY total_revenue DESC;
 -- =============================================================================
 
 -- View for waitlist and marketing metrics
-CREATE OR REPLACE VIEW v_marketing_metrics AS
+CREATE OR REPLACE VIEW signalzero.v_marketing_metrics AS
 SELECT 
     w.source,
     COUNT(*) as total_signups,
@@ -329,7 +329,7 @@ ORDER BY total_signups DESC;
 -- =============================================================================
 
 -- View for real-time dashboard (last 24 hours activity)
-CREATE OR REPLACE VIEW v_dashboard_realtime AS
+CREATE OR REPLACE VIEW signalzero.v_dashboard_realtime AS
 SELECT 
     'analyses' as metric_type,
     COUNT(*) as count,
@@ -365,11 +365,11 @@ ORDER BY metric_type, hour_of_day;
 -- COMMENTS FOR DOCUMENTATION
 -- =============================================================================
 
-COMMENT ON VIEW v_wall_of_shame IS 'Public Wall of Shame display with product details and evidence';
-COMMENT ON VIEW v_user_analyses IS 'User dashboard analytics with processing times and manipulation levels';
-COMMENT ON VIEW v_system_metrics IS 'System-wide KPIs and performance metrics for admin dashboard';
-COMMENT ON VIEW v_agent_performance IS 'Agent execution metrics and success rates for monitoring';
-COMMENT ON VIEW v_payment_metrics IS 'Revenue and payment analytics for financial reporting';
-COMMENT ON VIEW v_marketing_metrics IS 'Waitlist and conversion metrics for growth tracking';
+COMMENT ON VIEW signalzero.v_wall_of_shame IS 'Public Wall of Shame display with product details and evidence';
+COMMENT ON VIEW signalzero.v_user_analyses IS 'User dashboard analytics with processing times and manipulation levels';
+COMMENT ON VIEW signalzero.v_system_metrics IS 'System-wide KPIs and performance metrics for admin dashboard';
+COMMENT ON VIEW signalzero.v_agent_performance IS 'Agent execution metrics and success rates for monitoring';
+COMMENT ON VIEW signalzero.v_payment_metrics IS 'Revenue and payment analytics for financial reporting';
+COMMENT ON VIEW signalzero.v_marketing_metrics IS 'Waitlist and conversion metrics for growth tracking';
 
 -- Views creation complete

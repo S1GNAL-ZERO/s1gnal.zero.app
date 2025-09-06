@@ -73,26 +73,30 @@ else
     echo -e "${YELLOW}⚠️  Demo data file not found: $SCRIPT_DIR/04_seed_demo_data.sql (skipping)${NC}"
 fi
 
-# Verify the setup
+# Verify the setup - FIXED: Use signalzero schema instead of public
 echo -e "${YELLOW}🔍 Verifying database setup...${NC}"
-TABLE_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';")
-FUNCTION_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.routines WHERE routine_schema = 'public' AND routine_type = 'FUNCTION';")
-VIEW_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.views WHERE table_schema = 'public';")
-USER_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM users;" 2>/dev/null || echo "0")
-ANALYSIS_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM analyses;" 2>/dev/null || echo "0")
-WALL_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM wall_of_shame;" 2>/dev/null || echo "0")
+TABLE_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'signalzero' AND table_type = 'BASE TABLE';")
+FUNCTION_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.routines WHERE routine_schema = 'signalzero' AND routine_type = 'FUNCTION';")
+VIEW_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM information_schema.views WHERE table_schema = 'signalzero';")
+USER_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM signalzero.users;" 2>/dev/null || echo "0")
+ANALYSIS_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM signalzero.analyses;" 2>/dev/null || echo "0")
+WALL_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM signalzero.wall_of_shame;" 2>/dev/null || echo "0")
+AGENT_RESULTS_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM signalzero.agent_results;" 2>/dev/null || echo "0")
+WAITLIST_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT count(*) FROM signalzero.waitlist;" 2>/dev/null || echo "0")
 
 echo -e "${GREEN}📊 Database Verification Results:${NC}"
 echo -e "   • Tables: ${TABLE_COUNT// /} (expected: 8)"
-echo -e "   • Functions: ${FUNCTION_COUNT// /} (expected: 5+)"
-echo -e "   • Views: ${VIEW_COUNT// /} (expected: 6+)"
-echo -e "   • Demo Users: ${USER_COUNT// /} (expected: 5)"
-echo -e "   • Demo Analyses: ${ANALYSIS_COUNT// /} (expected: 5)"
-echo -e "   • Wall of Shame: ${WALL_COUNT// /} (expected: 5)"
+echo -e "   • Functions: ${FUNCTION_COUNT// /} (expected: 6+)"
+echo -e "   • Views: ${VIEW_COUNT// /} (expected: 4+)"
+echo -e "   • Demo Users: ${USER_COUNT// /} (expected: 3)"
+echo -e "   • Demo Analyses: ${ANALYSIS_COUNT// /} (expected: 3)"
+echo -e "   • Agent Results: ${AGENT_RESULTS_COUNT// /} (expected: 15)"
+echo -e "   • Wall of Shame: ${WALL_COUNT// /} (expected: 3)"
+echo -e "   • Waitlist Entries: ${WAITLIST_COUNT// /} (expected: 8)"
 
-# Test Reality Score calculation
+# Test Reality Score calculation - FIXED: Use signalzero schema
 echo -e "${YELLOW}🧪 Testing Reality Score calculation...${NC}"
-REALITY_SCORE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT calculate_reality_score(38, 22, 27, 18);" 2>/dev/null || echo "ERROR")
+REALITY_SCORE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT signalzero.calculate_reality_score(38, 22, 27, 18);" 2>/dev/null || echo "ERROR")
 if [ "$REALITY_SCORE" != "ERROR" ]; then
     EXPECTED="34.00"
     ACTUAL=$(echo "$REALITY_SCORE" | tr -d ' ')
@@ -105,12 +109,37 @@ else
     echo -e "${RED}❌ Error testing Reality Score function${NC}"
 fi
 
+# Test hardcoded demo values - NEW: Verify exact demo values
+echo -e "${YELLOW}🎯 Testing hardcoded demo values...${NC}"
+STANLEY_SCORE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT reality_score FROM signalzero.analyses WHERE query LIKE '%Stanley Cup%';" 2>/dev/null || echo "ERROR")
+BUZZ_SCORE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT reality_score FROM signalzero.analyses WHERE query LIKE '%\$BUZZ%';" 2>/dev/null || echo "ERROR")
+PRIME_SCORE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT reality_score FROM signalzero.analyses WHERE query LIKE '%Prime Energy%';" 2>/dev/null || echo "ERROR")
+
+if [ "$STANLEY_SCORE" != "ERROR" ] && [ "$(echo "$STANLEY_SCORE" | tr -d ' ')" = "34.00" ]; then
+    echo -e "${GREEN}✅ Stanley Cup: 34% Reality Score${NC}"
+else
+    echo -e "${RED}❌ Stanley Cup: Expected 34%, got $STANLEY_SCORE${NC}"
+fi
+
+if [ "$BUZZ_SCORE" != "ERROR" ] && [ "$(echo "$BUZZ_SCORE" | tr -d ' ')" = "12.00" ]; then
+    echo -e "${GREEN}✅ \$BUZZ: 12% Reality Score${NC}"
+else
+    echo -e "${RED}❌ \$BUZZ: Expected 12%, got $BUZZ_SCORE${NC}"
+fi
+
+if [ "$PRIME_SCORE" != "ERROR" ] && [ "$(echo "$PRIME_SCORE" | tr -d ' ')" = "29.00" ]; then
+    echo -e "${GREEN}✅ Prime Energy: 29% Reality Score${NC}"
+else
+    echo -e "${RED}❌ Prime Energy: Expected 29%, got $PRIME_SCORE${NC}"
+fi
+
 # Display connection info for development
 echo -e "${GREEN}🎯 Database reset complete!${NC}"
 echo -e "${YELLOW}📋 Connection Details:${NC}"
 echo -e "   • Database: $DB_NAME"
 echo -e "   • Host: $DB_HOST:$DB_PORT"
 echo -e "   • User: $DB_USER"
+echo -e "   • Schema: signalzero"
 echo -e ""
 echo -e "${YELLOW}🚀 Ready for development! Start the Spring Boot application with:${NC}"
 echo -e "   cd backend && mvn spring-boot:run"
@@ -124,6 +153,11 @@ echo -e "${YELLOW}🎪 Demo Queries (hardcoded Reality Scores):${NC}"
 echo -e "   • 'Stanley Cup' → 34% Reality Score (62% bots)"
 echo -e "   • 'Prime Energy' → 29% Reality Score (71% bots)"
 echo -e "   • '\$BUZZ' → 12% Reality Score (87% bots)"
+echo -e ""
+echo -e "${YELLOW}🤖 Multi-Agent System Ready:${NC}"
+echo -e "   • 5 agents with complete results for each analysis"
+echo -e "   • Bot detector, trend analyzer, review validator, paid promotion, score aggregator"
+echo -e "   • All agent results stored in signalzero.agent_results table"
 
 # Check for common connection issues
 if ! command -v psql &> /dev/null; then
@@ -140,6 +174,7 @@ else
     echo -e "   • Check PostgreSQL service is running"
     echo -e "   • Verify connection parameters"
     echo -e "   • Ensure user $DB_USER has database creation privileges"
+    echo -e "   • For MCP server: Update connection settings in Claude MCP config"
 fi
 
 echo -e "${GREEN}🛡️  S1GNAL.ZERO database reset completed successfully!${NC}"
