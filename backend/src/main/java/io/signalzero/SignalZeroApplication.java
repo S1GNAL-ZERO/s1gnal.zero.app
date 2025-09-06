@@ -34,14 +34,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @Push // REQUIRED for real-time updates (CLAUDE.md requirement)
-@Theme(variant = Lumo.DARK)
+@Theme("signalzero")
 @PWA(
     name = "S1GNAL.ZERO",
     shortName = "S1GNAL.ZERO",
     description = "AI-Powered Authenticity Verification System - Detect manufactured viral trends and bot manipulation in real-time",
-    iconPath = "images/logo.png",
-    backgroundColor = "#1a1a1a",
-    themeColor = "#ff6b35"
+    iconPath = "favicon.svg",
+    backgroundColor = "#0b1020",
+    themeColor = "#667eea"
 )
 public class SignalZeroApplication implements AppShellConfigurator {
 

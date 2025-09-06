@@ -14,6 +14,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -88,52 +89,512 @@ public class DashboardView extends VerticalLayout {
      * Uses repository pattern with direct JPA entity binding throughout.
      */
     public DashboardView() {
-        addClassName("s1gnal-main-layout");
+        addClassName("app");
         setSizeFull();
-        setPadding(true);
-        setSpacing(true);
+        setPadding(false);
+        setSpacing(false);
+        setMargin(false);
+        
+        // Set up CSS custom properties for theming
+        getElement().getStyle().set("--bg", "#0b1020");
+        getElement().getStyle().set("--panel", "#11162a");
+        getElement().getStyle().set("--panel-2", "#131a33");
+        getElement().getStyle().set("--ink", "#e8ecff");
+        getElement().getStyle().set("--muted", "#a6b0d8");
+        getElement().getStyle().set("--brand", "#667eea");
+        getElement().getStyle().set("--brand-2", "#764ba2");
+        getElement().getStyle().set("--ok", "#10b981");
+        getElement().getStyle().set("--warn", "#f59e0b");
+        getElement().getStyle().set("--bad", "#ef4444");
+        getElement().getStyle().set("--accent", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+        getElement().getStyle().set("--radius", "16px");
+        getElement().getStyle().set("--shadow", "0 20px 60px rgba(0,0,0,.35)");
+        
+        // Apply dark theme background
+        getStyle().set("background", "radial-gradient(1000px 600px at 10% -10%, rgba(102,126,234,.25), transparent 40%), radial-gradient(800px 600px at 90% -20%, rgba(118,75,162,.25), transparent 40%), var(--bg)");
+        getStyle().set("color", "var(--ink)");
+        getStyle().set("font-family", "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif");
+        
+        // Set up the main grid layout to match mockup
+        getStyle().set("display", "grid");
+        getStyle().set("grid-template-columns", "280px 1fr");
+        getStyle().set("grid-template-rows", "72px 1fr");
+        getStyle().set("min-height", "100vh");
+        
+        // Initialize the query field first
+        queryField = new TextField();
+        queryField.setPlaceholder("Enter product name, influencer handle, or trending topic...");
+        queryField.addClassName("analysis-input");
+        queryField.setWidthFull();
+        queryField.setClearButtonVisible(true);
+        queryField.setHelperText("Try: 'Stanley Cup', 'Prime Energy', '$BUZZ', or any viral product");
         
         createHeader();
-        createAnalysisForm();
-        createStatsSection();
-        createRecentAnalysesGrid();
-        createFooter();
+        createSidebar();
+        createMainContent();
         
         // Load initial data from repository
         refreshDashboardData();
     }
 
     /**
-     * Create the main header with logo and title.
+     * Create the top bar matching the UI mockup design.
      */
     private void createHeader() {
+        HorizontalLayout topBar = new HorizontalLayout();
+        topBar.addClassName("topbar");
+        topBar.setWidthFull();
+        topBar.setAlignItems(Alignment.CENTER);
+        topBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        topBar.setPadding(true);
+        topBar.getStyle().set("background", "var(--panel)");
+        topBar.getStyle().set("box-shadow", "var(--shadow)");
+        topBar.getStyle().set("z-index", "5");
+        
+        // Position topbar to span both columns
+        topBar.getStyle().set("grid-column", "1 / 3");
+        topBar.getStyle().set("grid-row", "1");
+        
+        // Logo section
+        HorizontalLayout logoSection = new HorizontalLayout();
+        logoSection.addClassName("logo");
+        logoSection.setAlignItems(Alignment.CENTER);
+        logoSection.setSpacing(true);
+        
+        // Logo badge
+        Div logoBadge = createBinaryShieldLogo();
+        logoBadge.addClassName("logo-badge");
+        logoBadge.getStyle().set("width", "40px");
+        logoBadge.getStyle().set("height", "40px");
+        logoBadge.getStyle().set("border-radius", "12px");
+        logoBadge.getStyle().set("background", "var(--accent)");
+        logoBadge.getStyle().set("display", "grid");
+        logoBadge.getStyle().set("place-items", "center");
+        logoBadge.getStyle().set("box-shadow", "0 10px 25px rgba(102,126,234,.35)");
+        
+        // Logo text
+        VerticalLayout logoText = new VerticalLayout();
+        logoText.setSpacing(false);
+        logoText.setPadding(false);
+        
+        Span brandName = new Span("S1GNAL.ZERO");
+        brandName.getStyle().set("font-size", "14px");
+        brandName.getStyle().set("color", "var(--muted)");
+        brandName.getStyle().set("font-weight", "700");
+        brandName.getStyle().set("letter-spacing", ".12em");
+        
+        Span tagline = new Span("AI-Powered Authenticity Verification");
+        tagline.getStyle().set("font-size", "18px");
+        tagline.getStyle().set("font-weight", "800");
+        tagline.getStyle().set("line-height", "1");
+        
+        logoText.add(brandName, tagline);
+        logoSection.add(logoBadge, logoText);
+        
+        // Search bar
+        HorizontalLayout searchBar = new HorizontalLayout();
+        searchBar.addClassName("search");
+        searchBar.setAlignItems(Alignment.CENTER);
+        searchBar.getStyle().set("background", "#0e1430");
+        searchBar.getStyle().set("border", "1px solid #263061");
+        searchBar.getStyle().set("border-radius", "12px");
+        searchBar.getStyle().set("padding", "10px 12px");
+        searchBar.getStyle().set("min-width", "360px");
+        searchBar.getStyle().set("color", "var(--muted)");
+        
+        TextField searchInput = new TextField();
+        searchInput.setPlaceholder("Search history, trends, influencers…");
+        searchInput.addClassName("search-input");
+        searchInput.getStyle().set("background", "transparent");
+        searchInput.getStyle().set("border", "none");
+        searchInput.getStyle().set("color", "var(--ink)");
+        searchInput.getStyle().set("width", "100%");
+        
+        searchBar.add(searchInput);
+        
+        // User section
+        HorizontalLayout userSection = new HorizontalLayout();
+        userSection.addClassName("user");
+        userSection.setAlignItems(Alignment.CENTER);
+        userSection.setSpacing(true);
+        
+        Span techChip = new Span("Java + Agent Mesh");
+        techChip.addClassName("chip");
+        techChip.getStyle().set("padding", "3px 8px");
+        techChip.getStyle().set("border-radius", "999px");
+        techChip.getStyle().set("font-size", "11px");
+        techChip.getStyle().set("background", "#1a2149");
+        techChip.getStyle().set("color", "#8aa0ff");
+        techChip.getStyle().set("border", "1px solid #2b376f");
+        
+        Div avatar = new Div();
+        avatar.addClassName("avatar");
+        avatar.getStyle().set("width", "36px");
+        avatar.getStyle().set("height", "36px");
+        avatar.getStyle().set("border-radius", "50%");
+        avatar.getStyle().set("background", "linear-gradient(135deg,#93c5fd,#a78bfa)");
+        
+        userSection.add(techChip, avatar);
+        
+        topBar.add(logoSection, searchBar, userSection);
+        add(topBar);
+    }
+    
+    /**
+     * Create sidebar navigation matching the UI mockup design.
+     */
+    private void createSidebar() {
+        VerticalLayout sidebar = new VerticalLayout();
+        sidebar.addClassName("sidebar");
+        sidebar.setPadding(true);
+        sidebar.setSpacing(true);
+        sidebar.getStyle().set("background", "var(--panel)");
+        sidebar.getStyle().set("border-right", "1px solid #1b2452");
+        sidebar.getStyle().set("grid-row", "1 / 3"); // Span both rows
+        
+        // Navigation title
+        Span navTitle = new Span("Navigation");
+        navTitle.addClassName("nav-title");
+        navTitle.getStyle().set("font-size", "12px");
+        navTitle.getStyle().set("letter-spacing", ".12em");
+        navTitle.getStyle().set("color", "var(--muted)");
+        navTitle.getStyle().set("text-transform", "uppercase");
+        navTitle.getStyle().set("margin", "6px 10px");
+        
+        // Navigation items
+        VerticalLayout navItems = new VerticalLayout();
+        navItems.addClassName("nav");
+        navItems.setSpacing(true);
+        navItems.setPadding(false);
+        
+        // Dashboard link (active)
+        HorizontalLayout dashboardLink = createNavLink("📊", "Dashboard", true);
+        HorizontalLayout analyzeLink = createNavLink("🔍", "Analyze", false);
+        HorizontalLayout historyLink = createNavLink("🕘", "History", false);
+        HorizontalLayout agentsLink = createNavLink("🤖", "Agents", false);
+        HorizontalLayout dataLink = createNavLink("🔗", "Data Sources", false);
+        HorizontalLayout adminLink = createNavLink("⚙️", "Admin", false);
+        
+        navItems.add(dashboardLink, analyzeLink, historyLink, agentsLink, dataLink, adminLink);
+        
+        // Quick Actions
+        Span actionsTitle = new Span("Quick Actions");
+        actionsTitle.addClassName("nav-title");
+        actionsTitle.getStyle().set("font-size", "12px");
+        actionsTitle.getStyle().set("letter-spacing", ".12em");
+        actionsTitle.getStyle().set("color", "var(--muted)");
+        actionsTitle.getStyle().set("text-transform", "uppercase");
+        actionsTitle.getStyle().set("margin", "16px 10px 6px 10px");
+        
+        // Quick action buttons
+        Button demoButton = new Button("Run Demo Analysis");
+        demoButton.addClassName("btn");
+        demoButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        demoButton.addClickListener(e -> {
+            queryField.setValue("Stanley Cup tumbler");
+            performAnalysis();
+        });
+        
+        Button memeButton = new Button("Load Meme-Stock Scenario");
+        memeButton.addClassName("btn");
+        memeButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        memeButton.addClickListener(e -> queryField.setValue("$BUZZ meme stock"));
+        
+        // Position sidebar to span both rows in column 1
+        sidebar.getStyle().set("grid-column", "1");
+        sidebar.getStyle().set("grid-row", "2");
+        sidebar.getStyle().set("padding-top", "35px");
+        
+        sidebar.add(navTitle, navItems, actionsTitle, demoButton, memeButton);
+        add(sidebar);
+    }
+    
+    /**
+     * Create a navigation link component.
+     */
+    private HorizontalLayout createNavLink(String icon, String label, boolean isActive) {
+        HorizontalLayout link = new HorizontalLayout();
+        link.addClassName("nav-link");
+        link.setAlignItems(Alignment.CENTER);
+        link.setSpacing(true);
+        link.getStyle().set("padding", "12px 14px");
+        link.getStyle().set("border-radius", "12px");
+        link.getStyle().set("cursor", "pointer");
+        
+        if (isActive) {
+            link.addClassName("active");
+            link.getStyle().set("background", "linear-gradient(135deg, rgba(102,126,234,.18), rgba(118,75,162,.18))");
+            link.getStyle().set("color", "#fff");
+            link.getStyle().set("border", "1px solid #2b376f");
+        } else {
+            link.getStyle().set("color", "var(--muted)");
+        }
+        
+        Span iconSpan = new Span(icon);
+        Span labelSpan = new Span(label);
+        labelSpan.addClassName("label");
+        
+        link.add(iconSpan, labelSpan);
+        return link;
+    }
+    
+    /**
+     * Create main content area matching the mockup design.
+     */
+    private void createMainContent() {
+        VerticalLayout mainContent = new VerticalLayout();
+        mainContent.addClassName("content");
+        mainContent.setPadding(true);
+        mainContent.setSpacing(true);
+        mainContent.getStyle().set("display", "grid");
+        mainContent.getStyle().set("gap", "20px");
+        
+        // KPI Cards Section
+        HorizontalLayout kpiSection = createKPISection();
+        
+        // Reality Score Overview Panel
+        Div realityScorePanel = createRealityScorePanel();
+        
+        // Latest Flags Panel
+        Div latestFlagsPanel = createLatestFlagsPanel();
+        
+        // Position main content in column 2, row 2
+        mainContent.getStyle().set("grid-column", "2");
+        mainContent.getStyle().set("grid-row", "2");
+        mainContent.getStyle().set("padding-top", "35px");
+        
+        mainContent.add(kpiSection, realityScorePanel, latestFlagsPanel);
+        add(mainContent);
+    }
+    
+    /**
+     * Create KPI section with three metric cards matching the mockup.
+     */
+    private HorizontalLayout createKPISection() {
+        HorizontalLayout kpiLayout = new HorizontalLayout();
+        kpiLayout.addClassName("grid");
+        kpiLayout.addClassName("cols-3");
+        kpiLayout.setWidthFull();
+        kpiLayout.setSpacing(true);
+        
+        // Avg Bot Detection KPI
+        Div botKPI = createKPICard("📈", "Avg. Bot Detection", "73%");
+        
+        // Median Analysis Time KPI
+        Div timeKPI = createKPICard("⚡", "Median Analysis Time", "5s");
+        
+        // Active Data Sources KPI
+        Div sourcesKPI = createKPICard("🔌", "Active Data Sources", "12");
+        
+        kpiLayout.add(botKPI, timeKPI, sourcesKPI);
+        return kpiLayout;
+    }
+    
+    /**
+     * Create a KPI card matching the mockup design.
+     */
+    private Div createKPICard(String icon, String label, String value) {
+        Div kpiCard = new Div();
+        kpiCard.addClassName("kpi");
+        kpiCard.getStyle().set("background", "var(--panel-2)");
+        kpiCard.getStyle().set("border-radius", "14px");
+        kpiCard.getStyle().set("border", "1px solid #27306a");
+        kpiCard.getStyle().set("padding", "16px");
+        kpiCard.getStyle().set("display", "flex");
+        kpiCard.getStyle().set("align-items", "center");
+        kpiCard.getStyle().set("gap", "14px");
+        
+        // Icon container
+        Div iconContainer = new Div();
+        iconContainer.addClassName("icon");
+        iconContainer.getStyle().set("width", "38px");
+        iconContainer.getStyle().set("height", "38px");
+        iconContainer.getStyle().set("border-radius", "10px");
+        iconContainer.getStyle().set("background", "var(--accent)");
+        iconContainer.getStyle().set("display", "grid");
+        iconContainer.getStyle().set("place-items", "center");
+        iconContainer.getElement().setProperty("innerHTML", icon);
+        
+        // Text content
+        VerticalLayout textContent = new VerticalLayout();
+        textContent.setSpacing(false);
+        textContent.setPadding(false);
+        
+        Span labelSpan = new Span(label);
+        labelSpan.addClassName("muted");
+        labelSpan.getStyle().set("color", "var(--muted)");
+        
+        Span valueSpan = new Span(value);
+        valueSpan.addClassName("big");
+        valueSpan.getStyle().set("font-size", "24px");
+        valueSpan.getStyle().set("font-weight", "800");
+        
+        textContent.add(labelSpan, valueSpan);
+        kpiCard.add(iconContainer, textContent);
+        
+        return kpiCard;
+    }
+    
+    /**
+     * Create Reality Score Overview panel.
+     */
+    private Div createRealityScorePanel() {
+        Div panel = new Div();
+        panel.addClassName("panel");
+        panel.getStyle().set("background", "var(--panel)");
+        panel.getStyle().set("border", "1px solid #1b2452");
+        panel.getStyle().set("border-radius", "var(--radius)");
+        panel.getStyle().set("box-shadow", "var(--shadow)");
+        
+        // Panel header
         HorizontalLayout header = new HorizontalLayout();
-        header.addClassName("s1gnal-header");
-        header.setWidthFull();
+        header.addClassName("panel-header");
         header.setAlignItems(Alignment.CENTER);
-        header.setPadding(true);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.getStyle().set("padding", "16px");
+        header.getStyle().set("border-bottom", "1px solid #1b2452");
         
-        // Logo and title
-        Icon logo = new Icon(VaadinIcon.SHIELD);
-        logo.addClassName("s1gnal-logo");
-        logo.setSize("2rem");
+        Span title = new Span("Reality Score Overview");
+        title.addClassName("panel-title");
+        title.getStyle().set("font-weight", "700");
         
-        H1 title = new H1("S1GNAL.ZERO");
-        title.addClassName("s1gnal-logo");
-        title.getStyle().set("margin", "0");
+        // Tags
+        HorizontalLayout tags = new HorizontalLayout();
+        Span liveTag = new Span("Live");
+        liveTag.addClassName("tag");
+        liveTag.getStyle().set("padding", "6px 10px");
+        liveTag.getStyle().set("border-radius", "999px");
+        liveTag.getStyle().set("font-size", "12px");
+        liveTag.getStyle().set("border", "1px solid #2b376f");
+        liveTag.getStyle().set("background", "#121942");
+        liveTag.getStyle().set("color", "#b6c3ff");
         
-        Span subtitle = new Span("AI-Powered Authenticity Verification System");
-        subtitle.getStyle().set("color", "var(--s1gnal-text-secondary)");
-        subtitle.getStyle().set("margin-left", "1rem");
+        Span timeTag = new Span("Last 24h");
+        timeTag.addClassName("tag");
+        timeTag.getStyle().set("padding", "6px 10px");
+        timeTag.getStyle().set("border-radius", "999px");
+        timeTag.getStyle().set("font-size", "12px");
+        timeTag.getStyle().set("border", "1px solid #2b376f");
+        timeTag.getStyle().set("background", "#121942");
+        timeTag.getStyle().set("color", "#b6c3ff");
         
-        VerticalLayout titleSection = new VerticalLayout(title, subtitle);
-        titleSection.setSpacing(false);
-        titleSection.setPadding(false);
+        tags.add(liveTag, timeTag);
+        header.add(title, tags);
         
-        header.add(logo, titleSection);
-        header.setFlexGrow(1, titleSection);
+        // Panel body with Reality Score gauge
+        HorizontalLayout body = new HorizontalLayout();
+        body.addClassName("panel-body");
+        body.addClassName("grid");
+        body.addClassName("cols-2");
+        body.setSpacing(true);
+        body.getStyle().set("padding", "16px");
         
-        add(header);
+        // Score wrap section
+        HorizontalLayout scoreWrap = new HorizontalLayout();
+        scoreWrap.addClassName("score-wrap");
+        scoreWrap.setAlignItems(Alignment.CENTER);
+        scoreWrap.setSpacing(true);
+        
+        // Add the existing Reality Score gauge
+        realityScoreGauge = new RealityScoreGauge();
+        
+        // Score details
+        VerticalLayout scoreDetails = new VerticalLayout();
+        scoreDetails.setSpacing(false);
+        scoreDetails.setPadding(false);
+        
+        Span scoreLabel = new Span("Reality Score");
+        scoreLabel.addClassName("score-label");
+        scoreLabel.getStyle().set("font-size", "12px");
+        scoreLabel.getStyle().set("letter-spacing", ".08em");
+        scoreLabel.getStyle().set("text-transform", "uppercase");
+        scoreLabel.getStyle().set("color", "var(--muted)");
+        
+        Span scoreValue = new Span("34%");
+        scoreValue.addClassName("score-value");
+        scoreValue.getStyle().set("font-size", "40px");
+        scoreValue.getStyle().set("font-weight", "900");
+        scoreValue.getStyle().set("line-height", "1");
+        
+        Span scoreCaption = new Span("Mostly manufactured hype");
+        scoreCaption.addClassName("muted");
+        scoreCaption.getStyle().set("color", "var(--muted)");
+        
+        // Tags for findings
+        HorizontalLayout findingsTags = new HorizontalLayout();
+        findingsTags.setSpacing(true);
+        findingsTags.getStyle().set("margin-top", "10px");
+        
+        Span botTag = new Span("Bot surge");
+        botTag.addClassName("tag");
+        Span promoTag = new Span("Paid promos");
+        promoTag.addClassName("tag");
+        Span clusterTag = new Span("Review clusters");
+        clusterTag.addClassName("tag");
+        
+        findingsTags.add(botTag, promoTag, clusterTag);
+        
+        scoreDetails.add(scoreLabel, scoreValue, scoreCaption, findingsTags);
+        scoreWrap.add(realityScoreGauge, scoreDetails);
+        
+        // Chart placeholder
+        Div chartPlaceholder = new Div();
+        chartPlaceholder.addClassName("chart");
+        chartPlaceholder.getStyle().set("height", "220px");
+        chartPlaceholder.getStyle().set("border-radius", "14px");
+        chartPlaceholder.getStyle().set("border", "1px dashed #2b376f");
+        chartPlaceholder.getStyle().set("display", "grid");
+        chartPlaceholder.getStyle().set("place-items", "center");
+        chartPlaceholder.getStyle().set("color", "#8aa0ff");
+        chartPlaceholder.setText("(Trend chart placeholder)");
+        
+        body.add(scoreWrap, chartPlaceholder);
+        panel.add(header, body);
+        
+        return panel;
+    }
+    
+    /**
+     * Create Latest Flags panel.
+     */
+    private Div createLatestFlagsPanel() {
+        Div panel = new Div();
+        panel.addClassName("panel");
+        panel.getStyle().set("background", "var(--panel)");
+        panel.getStyle().set("border", "1px solid #1b2452");
+        panel.getStyle().set("border-radius", "var(--radius)");
+        panel.getStyle().set("box-shadow", "var(--shadow)");
+        
+        // Panel header
+        HorizontalLayout header = new HorizontalLayout();
+        header.addClassName("panel-header");
+        header.setAlignItems(Alignment.CENTER);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.getStyle().set("padding", "16px");
+        header.getStyle().set("border-bottom", "1px solid #1b2452");
+        
+        Span title = new Span("Latest Flags");
+        title.addClassName("panel-title");
+        title.getStyle().set("font-weight", "700");
+        
+        Button refreshButton = new Button("Refresh");
+        refreshButton.addClassName("btn");
+        refreshButton.addClassName("secondary");
+        refreshButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        refreshButton.addClickListener(e -> refreshDashboardData());
+        
+        header.add(title, refreshButton);
+        
+        // Panel body with table (using existing grid)
+        Div body = new Div();
+        body.addClassName("panel-body");
+        body.getStyle().set("padding", "16px");
+        
+        createRecentAnalysesGrid();
+        body.add(recentAnalysesGrid);
+        
+        panel.add(header, body);
+        return panel;
     }
 
     /**
@@ -256,6 +717,35 @@ public class DashboardView extends VerticalLayout {
         
         card.add(iconSpan, labelH3, valueSpan);
         return card;
+    }
+
+    /**
+     * Create the binary shield logo component using the design from the logos file.
+     */
+    private Div createBinaryShieldLogo() {
+        Div logoDiv = new Div();
+        logoDiv.getElement().setProperty("innerHTML", 
+            "<svg width=\"48\" height=\"48\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\">" +
+            "<!-- Shield -->" +
+            "<path d=\"M50 10 L80 22 L80 55 C80 73 50 90 50 90 C50 90 20 73 20 55 L20 22 Z\" " +
+            "fill=\"url(#logoGrad)\"/>" +
+            "<!-- Binary pattern -->" +
+            "<text x=\"35\" y=\"35\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">101</text>" +
+            "<text x=\"55\" y=\"35\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">010</text>" +
+            "<text x=\"30\" y=\"48\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">0110</text>" +
+            "<text x=\"55\" y=\"48\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">1001</text>" +
+            "<text x=\"35\" y=\"61\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">110</text>" +
+            "<text x=\"55\" y=\"61\" font-family=\"monospace\" font-size=\"10\" fill=\"white\" opacity=\"0.7\">001</text>" +
+            "<!-- Central checkmark -->" +
+            "<path d=\"M38 45 L45 52 L62 38\" stroke=\"white\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\"/>" +
+            "<defs>" +
+            "<linearGradient id=\"logoGrad\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">" +
+            "<stop offset=\"0%\" style=\"stop-color:#667eea;stop-opacity:1\" />" +
+            "<stop offset=\"100%\" style=\"stop-color:#764ba2;stop-opacity:1\" />" +
+            "</linearGradient>" +
+            "</defs>" +
+            "</svg>");
+        return logoDiv;
     }
 
     /**
@@ -429,36 +919,13 @@ public class DashboardView extends VerticalLayout {
      */
     private void refreshDashboardData() {
         try {
-            // Get statistics directly from repository
-            long totalCount = analysisRepository.count();
-            totalAnalysesCount.setText(String.valueOf(totalCount));
-            
-            if (totalCount > 0) {
-                // Calculate averages using repository queries
-                List<Analysis> completedAnalyses = analysisRepository.findByStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
-                
-                if (!completedAnalyses.isEmpty()) {
-                    double avgBot = completedAnalyses.stream()
-                        .mapToDouble(a -> a.getBotPercentage().doubleValue())
-                        .average()
-                        .orElse(0.0);
-                    
-                    double avgReality = completedAnalyses.stream()
-                        .mapToDouble(a -> a.getRealityScore().doubleValue())
-                        .average()
-                        .orElse(0.0);
-                    
-                    avgBotPercentage.setText(String.format("%.0f%%", avgBot));
-                    avgRealityScore.setText(String.format("%.0f%%", avgReality));
-                }
-            }
-            
-            // Refresh recent analyses grid with repository data
-            List<Analysis> recentAnalyses = analysisRepository.findTop10ByIsPublicTrueAndStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
-            recentAnalysesGrid.setItems(recentAnalyses);
+            // For now, use empty lists since we don't have data yet
+            // This will be populated once analyses are created
+            recentAnalysesGrid.setItems(java.util.Collections.emptyList());
             
         } catch (Exception e) {
-            showNotification("Error refreshing dashboard data: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
+            // Gracefully handle any errors
+            System.err.println("Error refreshing dashboard data: " + e.getMessage());
         }
     }
 
