@@ -7,7 +7,7 @@
 -- =============================================================================
 
 -- Insert demo users with bcrypt hashed passwords (password: "password123")
-INSERT INTO users (email, password_hash, full_name, subscription_tier, referral_code, is_active, is_verified) VALUES
+INSERT INTO signalzero.users (email, password_hash, full_name, subscription_tier, referral_code, is_active, is_verified) VALUES
 ('demo@s1gnalzero.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Demo User', 'PRO', 'DEMO2024', true, true),
 ('founder@s1gnalzero.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Founder Account', 'ENTERPRISE', 'FOUNDER', true, true),
 ('free@example.com', '$2b$10$YGq3Uu7I9ftRTpm.OuUokuW.VGeKswLwX6asfOmGrJXxAotGr0YOu', 'Free User', 'FREE', 'FREE123', true, true),
@@ -20,7 +20,7 @@ ON CONFLICT (email) DO NOTHING;
 -- =============================================================================
 
 -- Insert demo analyses with exact values from DETAILED_DESIGN.md
-INSERT INTO analyses (
+INSERT INTO signalzero.analyses (
     user_id, 
     query, 
     query_type, 
@@ -39,36 +39,36 @@ INSERT INTO analyses (
     completed_at
 ) VALUES
 -- Stanley Cup - 62% bots, 34% Reality Score (RED)
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 
  'Stanley Cup Tumbler', 'product', 'all', 34.00, 62.00, 22.00, 27.00, 18.00, 
  'RED', 94.5, 'COMPLETE', 3240, true, true, NOW()),
 
 -- Prime Energy - 71% bots, 29% Reality Score (RED)  
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 
  'Prime Energy Drink', 'product', 'all', 29.00, 71.00, 18.00, 31.00, 15.00, 
  'RED', 91.2, 'COMPLETE', 2890, true, true, NOW()),
 
 -- $BUZZ Meme Stock - 87% bots, 12% Reality Score (RED)
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 
  '$BUZZ Meme Stock', 'stock', 'reddit', 12.00, 87.00, 8.00, 15.00, 10.00, 
  'RED', 96.8, 'COMPLETE', 2340, true, true, NOW()),
 
 -- Grimace Shake - 58% bots, 42% Reality Score (YELLOW)
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 
  'Grimace Shake', 'trend', 'twitter', 42.00, 58.00, 35.00, 42.00, 48.00, 
  'YELLOW', 88.3, 'COMPLETE', 3560, true, false, NOW()),
 
 -- Dubai Chocolate - 64% bots, 31% Reality Score (RED)
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 
  'Dubai Chocolate', 'product', 'instagram', 31.00, 64.00, 24.00, 29.00, 22.00, 
  'RED', 89.7, 'COMPLETE', 4120, true, true, NOW()),
 
 -- Some authentic products for contrast (GREEN zone)
-((SELECT id FROM users WHERE email = 'founder@s1gnalzero.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'founder@s1gnalzero.com'), 
  'Local Artisan Coffee', 'product', 'instagram', 78.00, 15.00, 82.00, 85.00, 88.00, 
  'GREEN', 92.1, 'COMPLETE', 2100, true, false, NOW()),
 
-((SELECT id FROM users WHERE email = 'business@company.com'), 
+((SELECT id FROM signalzero.users WHERE email = 'business@company.com'), 
  'Community Book Club', 'trend', 'twitter', 82.00, 8.00, 89.00, 78.00, 91.00, 
  'GREEN', 87.5, 'COMPLETE', 1890, true, false, NOW())
 
@@ -79,7 +79,7 @@ ON CONFLICT (query) DO NOTHING;
 -- =============================================================================
 
 -- Insert agent results for each analysis
-INSERT INTO agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
+INSERT INTO signalzero.agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
 SELECT 
     a.id,
     'bot-detector',
@@ -98,12 +98,12 @@ SELECT
     END,
     '["twitter_api", "reddit_api", "mock_fallback"]'::jsonb,
     FLOOR(RANDOM() * 1000 + 500)
-FROM analyses a 
+FROM signalzero.analyses a 
 WHERE a.status = 'COMPLETE'
 ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 
 -- Insert trend analysis results
-INSERT INTO agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
+INSERT INTO signalzero.agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
 SELECT 
     a.id,
     'trend-analyzer',
@@ -120,12 +120,12 @@ SELECT
     END,
     '["google_trends", "reddit_api", "newsapi"]'::jsonb,
     FLOOR(RANDOM() * 1200 + 800)
-FROM analyses a 
+FROM signalzero.analyses a 
 WHERE a.status = 'COMPLETE'
 ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 
 -- Insert review analysis results
-INSERT INTO agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
+INSERT INTO signalzero.agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
 SELECT 
     a.id,
     'review-validator',
@@ -142,12 +142,12 @@ SELECT
     END,
     '["amazon_scraper", "trustpilot_api", "mock_fallback"]'::jsonb,
     FLOOR(RANDOM() * 1500 + 1000)
-FROM analyses a 
+FROM signalzero.analyses a 
 WHERE a.status = 'COMPLETE'
 ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 
 -- Insert promotion detection results  
-INSERT INTO agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
+INSERT INTO signalzero.agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
 SELECT 
     a.id,
     'paid-promotion',
@@ -164,12 +164,12 @@ SELECT
     END,
     '["youtube_api", "instagram_api", "sponsorblock"]'::jsonb,
     FLOOR(RANDOM() * 2000 + 1500)
-FROM analyses a 
+FROM signalzero.analyses a 
 WHERE a.status = 'COMPLETE'
 ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 
 -- Insert score aggregator results
-INSERT INTO agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
+INSERT INTO signalzero.agent_results (analysis_id, agent_type, score, confidence, status, evidence, data_sources, processing_time_ms)
 SELECT 
     a.id,
     'score-aggregator',
@@ -179,7 +179,7 @@ SELECT
     ('{"final_score": ' || a.reality_score || ', "classification": "' || a.manipulation_level || '", "agent_scores": {"bot": ' || (100 - a.bot_percentage) || ', "trend": ' || a.trend_score || ', "review": ' || a.review_score || ', "promotion": ' || a.promotion_score || '}, "weights_applied": {"bot": 0.4, "trend": 0.3, "review": 0.2, "promotion": 0.1}}')::jsonb,
     '["internal"]'::jsonb,
     FLOOR(RANDOM() * 500 + 200)
-FROM analyses a 
+FROM signalzero.analyses a 
 WHERE a.status = 'COMPLETE'
 ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 
@@ -191,7 +191,7 @@ ON CONFLICT (analysis_id, agent_type) DO NOTHING;
 -- when analyses with bot_percentage > 60% are inserted. But we can also
 -- manually ensure they exist with proper company information:
 
-INSERT INTO wall_of_shame (
+INSERT INTO signalzero.wall_of_shame (
     analysis_id,
     product_name,
     company,
@@ -238,7 +238,7 @@ SELECT
         WHEN a.query ILIKE '%stanley%' THEN 4
         ELSE 999
     END
-FROM analyses a
+FROM signalzero.analyses a
 WHERE a.bot_percentage > 50 
   AND a.status = 'COMPLETE'
   AND a.is_public = true
@@ -249,7 +249,7 @@ ON CONFLICT (analysis_id) DO NOTHING;
 -- =============================================================================
 
 -- Insert demo waitlist entries
-INSERT INTO waitlist (email, referral_code, source, position, email_verified) VALUES
+INSERT INTO signalzero.waitlist (email, referral_code, source, position, email_verified) VALUES
 ('early.adopter1@gmail.com', 'EARLY001', 'reddit', 1, true),
 ('viral.hunter@yahoo.com', 'VIRAL002', 'twitter', 2, true),
 ('fomo.killer@outlook.com', 'FOMO003', 'producthunt', 3, true),
@@ -261,7 +261,7 @@ INSERT INTO waitlist (email, referral_code, source, position, email_verified) VA
 ON CONFLICT (email) DO NOTHING;
 
 -- Generate additional waitlist entries for impressive demo numbers
-INSERT INTO waitlist (email, referral_code, source, position, email_verified)
+INSERT INTO signalzero.waitlist (email, referral_code, source, position, email_verified)
 SELECT 
     'user' || gs || '@example.com',
     'REF' || LPAD(gs::text, 6, '0'),
@@ -276,11 +276,11 @@ ON CONFLICT (email) DO NOTHING;
 -- =============================================================================
 
 -- Insert demo payment records
-INSERT INTO payments (user_id, amount, currency, payment_type, stripe_payment_intent_id, status, description, processed_at) VALUES
-((SELECT id FROM users WHERE email = 'demo@s1gnalzero.com'), 99.00, 'USD', 'monthly', 'pi_demo_stanley_001', 'SUCCEEDED', 'PRO subscription - Monthly', NOW() - INTERVAL '5 days'),
-((SELECT id FROM users WHERE email = 'founder@s1gnalzero.com'), 4999.00, 'USD', 'annual', 'pi_demo_founder_001', 'SUCCEEDED', 'ENTERPRISE subscription - Annual', NOW() - INTERVAL '10 days'),
-((SELECT id FROM users WHERE email = 'business@company.com'), 499.00, 'USD', 'monthly', 'pi_demo_business_001', 'SUCCEEDED', 'BUSINESS subscription - Monthly', NOW() - INTERVAL '2 days'),
-((SELECT id FROM users WHERE email = 'free@example.com'), 99.00, 'USD', 'monthly', 'pi_demo_failed_001', 'FAILED', 'PRO subscription attempt - Card declined', NOW() - INTERVAL '1 day')
+INSERT INTO signalzero.payments (user_id, amount, currency, payment_type, stripe_payment_intent_id, status, description, processed_at) VALUES
+((SELECT id FROM signalzero.users WHERE email = 'demo@s1gnalzero.com'), 99.00, 'USD', 'monthly', 'pi_demo_stanley_001', 'SUCCEEDED', 'PRO subscription - Monthly', NOW() - INTERVAL '5 days'),
+((SELECT id FROM signalzero.users WHERE email = 'founder@s1gnalzero.com'), 4999.00, 'USD', 'annual', 'pi_demo_founder_001', 'SUCCEEDED', 'ENTERPRISE subscription - Annual', NOW() - INTERVAL '10 days'),
+((SELECT id FROM signalzero.users WHERE email = 'business@company.com'), 499.00, 'USD', 'monthly', 'pi_demo_business_001', 'SUCCEEDED', 'BUSINESS subscription - Monthly', NOW() - INTERVAL '2 days'),
+((SELECT id FROM signalzero.users WHERE email = 'free@example.com'), 99.00, 'USD', 'monthly', 'pi_demo_failed_001', 'FAILED', 'PRO subscription attempt - Card declined', NOW() - INTERVAL '1 day')
 ON CONFLICT (stripe_payment_intent_id) DO NOTHING;
 
 -- =============================================================================
@@ -288,15 +288,15 @@ ON CONFLICT (stripe_payment_intent_id) DO NOTHING;
 -- =============================================================================
 
 -- Insert demo marketing events
-INSERT INTO marketing_events (event_type, platform, action, content, analysis_id, product_exposed, views, clicks, engagements, status, posted_at) VALUES
+INSERT INTO signalzero.marketing_events (event_type, platform, action, content, analysis_id, product_exposed, views, clicks, engagements, status, posted_at) VALUES
 ('reddit_post', 'reddit', 'exposure_posted', 'EXPOSED: Stanley Cup is 62% BOTS! S1GNAL.ZERO reveals the truth behind viral products. Check it out!', 
- (SELECT id FROM analyses WHERE query ILIKE '%stanley%' LIMIT 1), 'Stanley Cup Tumbler', 1247, 89, 156, 'POSTED', NOW() - INTERVAL '3 hours'),
+ (SELECT id FROM signalzero.analyses WHERE query ILIKE '%stanley%' LIMIT 1), 'Stanley Cup Tumbler', 1247, 89, 156, 'POSTED', NOW() - INTERVAL '3 hours'),
 
 ('twitter_post', 'twitter', 'exposure_posted', '🚨 VIRAL MANIPULATION ALERT 🚨\n\nPrime Energy: 71% BOT ENGAGEMENT detected!\n\n#NoMoreFOMO #BotDetection #S1GNALZERO', 
- (SELECT id FROM analyses WHERE query ILIKE '%prime%' LIMIT 1), 'Prime Energy Drink', 892, 45, 78, 'POSTED', NOW() - INTERVAL '6 hours'),
+ (SELECT id FROM signalzero.analyses WHERE query ILIKE '%prime%' LIMIT 1), 'Prime Energy Drink', 892, 45, 78, 'POSTED', NOW() - INTERVAL '6 hours'),
 
 ('discord_message', 'discord', 'exposure_posted', '$BUZZ meme stock manipulation exposed! 87% bots pushing fake hype. Protect your investments with S1GNAL.ZERO', 
- (SELECT id FROM analyses WHERE query ILIKE '%$buzz%' LIMIT 1), '$BUZZ Meme Stock', 234, 23, 41, 'POSTED', NOW() - INTERVAL '2 hours')
+ (SELECT id FROM signalzero.analyses WHERE query ILIKE '%$buzz%' LIMIT 1), '$BUZZ Meme Stock', 234, 23, 41, 'POSTED', NOW() - INTERVAL '2 hours')
 ON CONFLICT DO NOTHING;
 
 -- =============================================================================
@@ -304,20 +304,20 @@ ON CONFLICT DO NOTHING;
 -- =============================================================================
 
 -- Update usage statistics for demo users
-UPDATE users SET 
+UPDATE signalzero.users SET 
     analyses_used_this_month = 2,
     analyses_used_total = 15,
     last_login_at = NOW() - INTERVAL '1 hour'
 WHERE email = 'demo@s1gnalzero.com';
 
-UPDATE users SET 
+UPDATE signalzero.users SET 
     analyses_used_this_month = 8,
     analyses_used_total = 127,
     referral_count = 5,
     last_login_at = NOW() - INTERVAL '30 minutes'
 WHERE email = 'founder@s1gnalzero.com';
 
-UPDATE users SET 
+UPDATE signalzero.users SET 
     analyses_used_this_month = 3,
     analyses_used_total = 3,
     last_login_at = NOW() - INTERVAL '2 hours'
@@ -343,11 +343,11 @@ DECLARE
     waitlist_count INTEGER;
     payment_count INTEGER;
 BEGIN
-    SELECT COUNT(*) INTO user_count FROM users;
-    SELECT COUNT(*) INTO analysis_count FROM analyses WHERE status = 'COMPLETE';
-    SELECT COUNT(*) INTO wall_count FROM wall_of_shame WHERE is_active = true;
-    SELECT COUNT(*) INTO waitlist_count FROM waitlist;
-    SELECT COUNT(*) INTO payment_count FROM payments WHERE status = 'SUCCEEDED';
+    SELECT COUNT(*) INTO user_count FROM signalzero.users;
+    SELECT COUNT(*) INTO analysis_count FROM signalzero.analyses WHERE status = 'COMPLETE';
+    SELECT COUNT(*) INTO wall_count FROM signalzero.wall_of_shame WHERE is_active = true;
+    SELECT COUNT(*) INTO waitlist_count FROM signalzero.waitlist;
+    SELECT COUNT(*) INTO payment_count FROM signalzero.payments WHERE status = 'SUCCEEDED';
     
     RAISE NOTICE '=== S1GNAL.ZERO DEMO DATA SEEDED ===';
     RAISE NOTICE 'Users: %', user_count;
@@ -359,6 +359,6 @@ BEGIN
 END $$;
 
 -- Demo data seeding complete
-COMMENT ON TABLE users IS 'Demo data includes 5 users across all subscription tiers with realistic usage patterns';
-COMMENT ON TABLE analyses IS 'Demo data includes viral product analyses with hardcoded Reality Scores for consistent demos';
-COMMENT ON TABLE wall_of_shame IS 'Demo data includes high-manipulation products automatically populated by triggers';
+COMMENT ON TABLE signalzero.users IS 'Demo data includes 5 users across all subscription tiers with realistic usage patterns';
+COMMENT ON TABLE signalzero.analyses IS 'Demo data includes viral product analyses with hardcoded Reality Scores for consistent demos';
+COMMENT ON TABLE signalzero.wall_of_shame IS 'Demo data includes high-manipulation products automatically populated by triggers';

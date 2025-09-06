@@ -6,11 +6,18 @@
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";  -- Not needed for gen_random_uuid()
 
 -- =============================================================================
+-- SCHEMA CREATION
+-- =============================================================================
+
+-- Create the signalzero schema
+CREATE SCHEMA IF NOT EXISTS signalzero;
+
+-- =============================================================================
 -- TABLE CREATION
 -- =============================================================================
 
 -- Core user table with authentication and subscription tracking
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS signalzero.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -30,7 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
     
     -- Referral system
     referral_code VARCHAR(20) UNIQUE,
-    referred_by UUID REFERENCES users(id),
+    referred_by UUID REFERENCES signalzero.users(id),
     referral_count INT DEFAULT 0,
     
     -- Account status
@@ -45,9 +52,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Analysis requests and results
-CREATE TABLE IF NOT EXISTS analyses (
+CREATE TABLE IF NOT EXISTS signalzero.analyses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES signalzero.users(id) ON DELETE CASCADE,
     
     -- Query details
     query TEXT NOT NULL,
@@ -85,9 +92,9 @@ CREATE TABLE IF NOT EXISTS analyses (
 );
 
 -- Individual agent processing results
-CREATE TABLE IF NOT EXISTS agent_results (
+CREATE TABLE IF NOT EXISTS signalzero.agent_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
+    analysis_id UUID REFERENCES signalzero.analyses(id) ON DELETE CASCADE,
     
     -- Agent identification
     agent_type VARCHAR(50) NOT NULL CHECK (agent_type IN ('bot-detector', 'trend-analyzer', 'review-validator', 'paid-promotion', 'score-aggregator')),
@@ -116,9 +123,9 @@ CREATE TABLE IF NOT EXISTS agent_results (
 );
 
 -- Featured manipulated products/trends
-CREATE TABLE IF NOT EXISTS wall_of_shame (
+CREATE TABLE IF NOT EXISTS signalzero.wall_of_shame (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
+    analysis_id UUID REFERENCES signalzero.analyses(id) ON DELETE CASCADE,
     
     -- Display information
     product_name VARCHAR(255) NOT NULL,
@@ -150,9 +157,9 @@ CREATE TABLE IF NOT EXISTS wall_of_shame (
 );
 
 -- Payment transactions
-CREATE TABLE IF NOT EXISTS payments (
+CREATE TABLE IF NOT EXISTS signalzero.payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES signalzero.users(id) ON DELETE CASCADE,
     
     -- Payment details
     amount DECIMAL(10,2) NOT NULL,
@@ -179,7 +186,7 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 -- Email waitlist for launch
-CREATE TABLE IF NOT EXISTS waitlist (
+CREATE TABLE IF NOT EXISTS signalzero.waitlist (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     
@@ -208,7 +215,7 @@ CREATE TABLE IF NOT EXISTS waitlist (
     -- Conversion
     converted_to_user BOOLEAN DEFAULT false,
     converted_at TIMESTAMP,
-    user_id UUID REFERENCES users(id),
+    user_id UUID REFERENCES signalzero.users(id),
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -216,7 +223,7 @@ CREATE TABLE IF NOT EXISTS waitlist (
 );
 
 -- Track automated marketing activities
-CREATE TABLE IF NOT EXISTS marketing_events (
+CREATE TABLE IF NOT EXISTS signalzero.marketing_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Event details
@@ -230,7 +237,7 @@ CREATE TABLE IF NOT EXISTS marketing_events (
     hashtags JSONB, -- ["#NoMoreFOMO", "#AIDetection"]
     
     -- Related analysis
-    analysis_id UUID REFERENCES analyses(id),
+    analysis_id UUID REFERENCES signalzero.analyses(id),
     product_exposed VARCHAR(255),
     
     -- Engagement metrics
@@ -252,9 +259,9 @@ CREATE TABLE IF NOT EXISTS marketing_events (
 );
 
 -- User API keys for programmatic access
-CREATE TABLE IF NOT EXISTS api_keys (
+CREATE TABLE IF NOT EXISTS signalzero.api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES signalzero.users(id) ON DELETE CASCADE,
     
     -- Key details
     key_hash VARCHAR(255) UNIQUE NOT NULL, -- Store hashed version
@@ -284,66 +291,66 @@ CREATE TABLE IF NOT EXISTS api_keys (
 -- =============================================================================
 
 -- Indexes for users table
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id);
-CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
-CREATE INDEX IF NOT EXISTS idx_users_subscription_tier ON users(subscription_tier);
+CREATE INDEX IF NOT EXISTS idx_users_email ON signalzero.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON signalzero.users(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON signalzero.users(referral_code);
+CREATE INDEX IF NOT EXISTS idx_users_subscription_tier ON signalzero.users(subscription_tier);
 
 -- Indexes for analyses table
-CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses(user_id);
-CREATE INDEX IF NOT EXISTS idx_analyses_status ON analyses(status);
-CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_analyses_reality_score ON analyses(reality_score);
-CREATE INDEX IF NOT EXISTS idx_analyses_bot_percentage ON analyses(bot_percentage);
-CREATE INDEX IF NOT EXISTS idx_analyses_is_public ON analyses(is_public);
-CREATE INDEX IF NOT EXISTS idx_analyses_correlation_id ON analyses(solace_correlation_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON signalzero.analyses(user_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_status ON signalzero.analyses(status);
+CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON signalzero.analyses(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analyses_reality_score ON signalzero.analyses(reality_score);
+CREATE INDEX IF NOT EXISTS idx_analyses_bot_percentage ON signalzero.analyses(bot_percentage);
+CREATE INDEX IF NOT EXISTS idx_analyses_is_public ON signalzero.analyses(is_public);
+CREATE INDEX IF NOT EXISTS idx_analyses_correlation_id ON signalzero.analyses(solace_correlation_id);
 
 -- Indexes for agent_results table
-CREATE INDEX IF NOT EXISTS idx_agent_results_analysis_id ON agent_results(analysis_id);
-CREATE INDEX IF NOT EXISTS idx_agent_results_agent_type ON agent_results(agent_type);
-CREATE INDEX IF NOT EXISTS idx_agent_results_status ON agent_results(status);
+CREATE INDEX IF NOT EXISTS idx_agent_results_analysis_id ON signalzero.agent_results(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_agent_results_agent_type ON signalzero.agent_results(agent_type);
+CREATE INDEX IF NOT EXISTS idx_agent_results_status ON signalzero.agent_results(status);
 
 -- Indexes for wall_of_shame table
-CREATE INDEX IF NOT EXISTS idx_wall_of_shame_active ON wall_of_shame(is_active);
-CREATE INDEX IF NOT EXISTS idx_wall_of_shame_bot_percentage ON wall_of_shame(bot_percentage DESC);
-CREATE INDEX IF NOT EXISTS idx_wall_of_shame_created_at ON wall_of_shame(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wall_of_shame_active ON signalzero.wall_of_shame(is_active);
+CREATE INDEX IF NOT EXISTS idx_wall_of_shame_bot_percentage ON signalzero.wall_of_shame(bot_percentage DESC);
+CREATE INDEX IF NOT EXISTS idx_wall_of_shame_created_at ON signalzero.wall_of_shame(created_at DESC);
 
 -- Indexes for payments table
-CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-CREATE INDEX IF NOT EXISTS idx_payments_stripe_intent ON payments(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user_id ON signalzero.payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON signalzero.payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_stripe_intent ON signalzero.payments(stripe_payment_intent_id);
 
 -- Indexes for waitlist table
-CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
-CREATE INDEX IF NOT EXISTS idx_waitlist_referral_code ON waitlist(referral_code);
-CREATE INDEX IF NOT EXISTS idx_waitlist_position ON waitlist(position);
-CREATE INDEX IF NOT EXISTS idx_waitlist_source ON waitlist(source);
+CREATE INDEX IF NOT EXISTS idx_waitlist_email ON signalzero.waitlist(email);
+CREATE INDEX IF NOT EXISTS idx_waitlist_referral_code ON signalzero.waitlist(referral_code);
+CREATE INDEX IF NOT EXISTS idx_waitlist_position ON signalzero.waitlist(position);
+CREATE INDEX IF NOT EXISTS idx_waitlist_source ON signalzero.waitlist(source);
 
 -- Indexes for marketing_events table
-CREATE INDEX IF NOT EXISTS idx_marketing_events_type ON marketing_events(event_type);
-CREATE INDEX IF NOT EXISTS idx_marketing_events_platform ON marketing_events(platform);
-CREATE INDEX IF NOT EXISTS idx_marketing_events_analysis ON marketing_events(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_marketing_events_type ON signalzero.marketing_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_marketing_events_platform ON signalzero.marketing_events(platform);
+CREATE INDEX IF NOT EXISTS idx_marketing_events_analysis ON signalzero.marketing_events(analysis_id);
 
 -- Indexes for api_keys table
-CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
-CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
-CREATE INDEX IF NOT EXISTS idx_api_keys_is_active ON api_keys(is_active);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON signalzero.api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON signalzero.api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_is_active ON signalzero.api_keys(is_active);
 
 -- =============================================================================
 -- ADDITIONAL CONSTRAINTS
 -- =============================================================================
 
 -- Check constraints
-ALTER TABLE users 
+ALTER TABLE signalzero.users 
     ADD CONSTRAINT IF NOT EXISTS check_email_format 
     CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$');
 
-ALTER TABLE analyses
+ALTER TABLE signalzero.analyses
     ADD CONSTRAINT IF NOT EXISTS check_processing_time 
     CHECK (processing_time_ms >= 0 AND processing_time_ms <= 60000); -- Max 60 seconds
 
 -- Ensure scores are within valid range
-ALTER TABLE agent_results
+ALTER TABLE signalzero.agent_results
     ADD CONSTRAINT IF NOT EXISTS check_scores 
     CHECK (score >= 0 AND score <= 100 AND confidence >= 0 AND confidence <= 100);
 
@@ -352,9 +359,9 @@ ALTER TABLE agent_results
 -- =============================================================================
 
 -- Partial indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_analyses_pending ON analyses(id, user_id) WHERE status = 'PENDING';
-CREATE INDEX IF NOT EXISTS idx_analyses_high_bot ON analyses(bot_percentage) WHERE bot_percentage > 60;
-CREATE INDEX IF NOT EXISTS idx_users_paid ON users(id) WHERE subscription_tier != 'FREE';
+CREATE INDEX IF NOT EXISTS idx_analyses_pending ON signalzero.analyses(id, user_id) WHERE status = 'PENDING';
+CREATE INDEX IF NOT EXISTS idx_analyses_high_bot ON signalzero.analyses(bot_percentage) WHERE bot_percentage > 60;
+CREATE INDEX IF NOT EXISTS idx_users_paid ON signalzero.users(id) WHERE subscription_tier != 'FREE';
 
 -- Schema creation complete
 COMMENT ON DATABASE CURRENT_DATABASE() IS 'S1GNAL.ZERO - AI-Powered Authenticity Verification System';

@@ -149,14 +149,10 @@ public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
     // Additional methods for controllers
     long countByBotPercentageGreaterThan(BigDecimal threshold);
     
-    List<Analysis> findTop10ByIsPublicTrueAndStatusOrderByCreatedAtDesc(Boolean isPublic, AnalysisStatus status);
-    
     // Additional method for DashboardView that just needs AnalysisStatus
     List<Analysis> findTop10ByIsPublicTrueAndStatusOrderByCreatedAtDesc(AnalysisStatus status);
     
-    long countByUser(io.signalzero.model.User user);
-    
-    Page<Analysis> findByIsPublicTrueAndStatus(Boolean isPublic, AnalysisStatus status, Pageable pageable);
+    Page<Analysis> findByIsPublicTrueAndStatus(AnalysisStatus status, Pageable pageable);
     
     long countByRealityScoreLessThanEqual(BigDecimal score);
     
@@ -164,20 +160,15 @@ public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
     
     long countByRealityScoreGreaterThanEqual(BigDecimal score);
     
-    Page<Analysis> findByQueryContainingIgnoreCaseAndIsPublicTrueAndStatus(String query, Boolean isPublic, AnalysisStatus status, Pageable pageable);
+    Page<Analysis> findByQueryContainingIgnoreCaseAndIsPublicTrueAndStatus(String query, AnalysisStatus status, Pageable pageable);
     
     List<Analysis> findByStatusAndBotPercentageIsNotNull(AnalysisStatus status);
     
     List<Analysis> findByStatusAndRealityScoreIsNotNull(AnalysisStatus status);
     
-    // Convenience methods for averages
-    Double findAverageBotPercentage();
-    
-    Double findAverageRealityScore();
-    
     List<Analysis> findTop10ByStatusOrderByCreatedAtDesc(AnalysisStatus status);
     
-    Page<Analysis> findByIsPublicTrueAndBotPercentageGreaterThanOrderByBotPercentageDesc(Boolean isPublic, BigDecimal threshold, Pageable pageable);
+    Page<Analysis> findByIsPublicTrueAndBotPercentageGreaterThanOrderByBotPercentageDesc(BigDecimal threshold, Pageable pageable);
     
     // Missing method for DashboardView
     List<Analysis> findByStatusOrderByCreatedAtDesc(AnalysisStatus status);

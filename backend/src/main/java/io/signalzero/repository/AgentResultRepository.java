@@ -97,9 +97,9 @@ public interface AgentResultRepository extends JpaRepository<AgentResult, UUID> 
     @Query("SELECT ar.agentVersion, COUNT(ar) FROM AgentResult ar GROUP BY ar.agentVersion ORDER BY COUNT(ar) DESC")
     List<Object[]> getAgentVersionUsage();
     
-    // Data source tracking
-    @Query("SELECT ar FROM AgentResult ar WHERE JSON_CONTAINS(ar.dataSources, :dataSource)")
-    List<AgentResult> findByDataSourceContaining(@Param("dataSource") String dataSource);
+    // Data source tracking - TODO: Implement with native query if needed
+    // @Query("SELECT ar FROM AgentResult ar WHERE ar.dataSources @> CAST(:dataSource AS jsonb)")
+    // List<AgentResult> findByDataSourceContaining(@Param("dataSource") String dataSource);
     
     // Error tracking
     List<AgentResult> findByStatusAndErrorMessageIsNotNullOrderByCreatedAtDesc(AnalysisStatus status);

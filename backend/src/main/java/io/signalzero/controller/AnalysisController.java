@@ -179,7 +179,7 @@ public class AnalysisController {
             
             Page<Analysis> analyses = analysisRepository
                 .findByIsPublicTrueAndBotPercentageGreaterThanOrderByBotPercentageDesc(
-                    true, java.math.BigDecimal.valueOf(60), pageable);
+                    java.math.BigDecimal.valueOf(60), pageable);
 
             return ResponseEntity.ok(Map.of(
                 "content", analyses.getContent(),
@@ -336,7 +336,7 @@ public class AnalysisController {
 
     private Double calculateAverageBotPercentage() {
         try {
-            return analysisRepository.findAverageBotPercentage();
+            return analysisRepository.getAverageBotPercentage();
         } catch (Exception e) {
             log.error("Failed to calculate average bot percentage", e);
             return 0.0;
@@ -345,7 +345,7 @@ public class AnalysisController {
 
     private Double calculateAverageRealityScore() {
         try {
-            return analysisRepository.findAverageRealityScore();
+            return analysisRepository.getAverageRealityScore();
         } catch (Exception e) {
             log.error("Failed to calculate average reality score", e);
             return 0.0;

@@ -165,9 +165,9 @@ public interface WallOfShameRepository extends JpaRepository<WallOfShame, UUID> 
     int clearExpiredFeatured(@Param("now") LocalDateTime now);
     
     // Additional methods for dashboard controller
-    List<WallOfShame> findTop10ByIsActiveTrueOrderByBotPercentageDesc(Boolean isActive);
+    List<WallOfShame> findTop10ByIsActiveTrueOrderByBotPercentageDesc();
     
-    Page<WallOfShame> findByIsActiveTrueOrderByBotPercentageDesc(Boolean isActive, Pageable pageable);
+    Page<WallOfShame> findByIsActiveTrueOrderByBotPercentageDesc(Pageable pageable);
     
     // Count methods for statistics
     Long countByIsActive(Boolean isActive);

@@ -28,8 +28,8 @@ SELECT
     a.platform,
     a.query_type,
     a.processing_time_ms
-FROM wall_of_shame w
-JOIN analyses a ON w.analysis_id = a.id
+FROM signalzero.wall_of_shame w
+JOIN signalzero.analyses a ON w.analysis_id = a.id
 WHERE w.is_active = true 
   AND (w.featured_until IS NULL OR w.featured_until > NOW())
 ORDER BY 
@@ -50,8 +50,8 @@ SELECT
         WHEN (w.views + w.shares + w.reports) > 100 THEN 'TRENDING'
         ELSE 'ACTIVE'
     END as trending_status
-FROM wall_of_shame w
-JOIN analyses a ON w.analysis_id = a.id
+FROM signalzero.wall_of_shame w
+JOIN signalzero.analyses a ON w.analysis_id = a.id
 WHERE w.is_active = true 
   AND (w.featured_until IS NULL OR w.featured_until > NOW())
 ORDER BY engagement_score DESC, w.created_at DESC;
@@ -92,9 +92,9 @@ SELECT
     END as actual_processing_time_ms,
     -- Check if in Wall of Shame
     CASE WHEN w.id IS NOT NULL THEN true ELSE false END as in_wall_of_shame
-FROM analyses a
-JOIN users u ON a.user_id = u.id
-LEFT JOIN wall_of_shame w ON a.id = w.analysis_id AND w.is_active = true
+FROM signalzero.analyses a
+JOIN signalzero.users u ON a.user_id = u.id
+LEFT JOIN signalzero.wall_of_shame w ON a.id = w.analysis_id AND w.is_active = true
 WHERE a.status = 'COMPLETE'
 ORDER BY a.created_at DESC;
 
@@ -147,8 +147,8 @@ SELECT
     COUNT(CASE WHEN a.manipulation_level = 'RED' THEN 1 END) as red_zone_analyses,
     AVG(a.bot_percentage) as avg_bot_percentage_found,
     AVG(a.reality_score) as avg_reality_score
-FROM users u
-LEFT JOIN analyses a ON u.id = a.user_id AND a.status = 'COMPLETE'
+FROM signalzero.users u
+LEFT JOIN signalzero.analyses a ON u.id = a.user_id AND a.status = 'COMPLETE'
 GROUP BY u.id, u.email, u.full_name, u.subscription_tier, u.subscription_start_date, 
          u.subscription_end_date, u.analyses_used_this_month, u.analyses_used_total,
          u.referral_count, u.created_at, u.last_login_at
@@ -200,9 +200,9 @@ SELECT
     
     -- Current timestamp for report generation
     NOW() as report_generated_at
-FROM users u
-LEFT JOIN analyses a ON u.id = a.user_id
-LEFT JOIN wall_of_shame w ON a.id = w.analysis_id AND w.is_active = true;
+FROM signalzero.users u
+LEFT JOIN signalzero.analyses a ON u.id = a.user_id
+LEFT JOIN signalzero.wall_of_shame w ON a.id = w.analysis_id AND w.is_active = true;
 
 -- =============================================================================
 -- AGENT PERFORMANCE VIEWS
@@ -243,7 +243,7 @@ SELECT
     
     MIN(ar.created_at) as first_execution,
     MAX(ar.completed_at) as last_execution
-FROM agent_results ar
+FROM signalzero.agent_results ar
 WHERE ar.created_at > NOW() - INTERVAL '30 days' -- Focus on recent data
 GROUP BY ar.agent_type, ar.agent_version
 ORDER BY ar.agent_type, ar.agent_version DESC;
@@ -278,7 +278,7 @@ SELECT
     
     MIN(p.created_at) as first_payment,
     MAX(p.processed_at) as last_payment
-FROM payments p
+FROM signalzero.payments p
 GROUP BY p.payment_type, p.currency
 ORDER BY total_revenue DESC;
 
@@ -320,7 +320,7 @@ SELECT
     
     MIN(w.created_at) as first_signup,
     MAX(w.created_at) as last_signup
-FROM waitlist w
+FROM signalzero.waitlist w
 GROUP BY w.source
 ORDER BY total_signups DESC;
 
@@ -334,7 +334,7 @@ SELECT
     'analyses' as metric_type,
     COUNT(*) as count,
     EXTRACT(HOUR FROM created_at) as hour_of_day
-FROM analyses 
+FROM signalzero.analyses 
 WHERE created_at > NOW() - INTERVAL '24 hours'
 GROUP BY EXTRACT(HOUR FROM created_at)
 
@@ -344,7 +344,7 @@ SELECT
     'users' as metric_type,
     COUNT(*) as count,
     EXTRACT(HOUR FROM created_at) as hour_of_day
-FROM users 
+FROM signalzero.users 
 WHERE created_at > NOW() - INTERVAL '24 hours'
 GROUP BY EXTRACT(HOUR FROM created_at)
 
@@ -354,7 +354,7 @@ SELECT
     'payments' as metric_type,
     COUNT(*) as count,
     EXTRACT(HOUR FROM created_at) as hour_of_day
-FROM payments 
+FROM signalzero.payments 
 WHERE created_at > NOW() - INTERVAL '24 hours'
   AND status = 'SUCCEEDED'
 GROUP BY EXTRACT(HOUR FROM created_at)

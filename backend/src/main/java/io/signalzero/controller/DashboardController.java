@@ -55,10 +55,10 @@ public class DashboardController {
             
             // Get recent public analyses
             List<Analysis> recentAnalyses = analysisRepository
-                .findTop10ByIsPublicTrueAndStatusOrderByCreatedAtDesc(true, AnalysisStatus.COMPLETE);
+                .findTop10ByIsPublicTrueAndStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
             
             // Get Wall of Shame entries
-            List<WallOfShame> wallOfShame = wallOfShameRepository.findTop10ByIsActiveTrueOrderByBotPercentageDesc(true);
+            List<WallOfShame> wallOfShame = wallOfShameRepository.findTop10ByIsActiveTrueOrderByBotPercentageDesc();
             
             // Calculate averages
             Double avgBotPercentage = calculateAverageBotPercentage();
@@ -77,7 +77,7 @@ public class DashboardController {
             
             // Add user-specific data if authenticated
             if (currentUser != null) {
-                overview.put("userAnalysesCount", analysisRepository.countByUser(currentUser));
+                overview.put("userAnalysesCount", analysisRepository.countByUserId(currentUser.getId()));
                 overview.put("userAnalysesUsed", currentUser.getAnalysesUsedThisMonth());
                 overview.put("userAnalysesRemaining", currentUser.getRemainingAnalyses());
             }
@@ -108,7 +108,7 @@ public class DashboardController {
             
             Pageable pageable = PageRequest.of(page, size, sort);
             Page<WallOfShame> wallOfShame = wallOfShameRepository
-                .findByIsActiveTrueOrderByBotPercentageDesc(true, pageable);
+                .findByIsActiveTrueOrderByBotPercentageDesc(pageable);
 
             return ResponseEntity.ok(Map.of(
                 "content", wallOfShame.getContent(),
@@ -137,7 +137,7 @@ public class DashboardController {
                 Sort.by("createdAt").descending());
             
             Page<Analysis> recentAnalyses = analysisRepository
-                .findByIsPublicTrueAndStatus(true, AnalysisStatus.COMPLETE, pageable);
+                .findByIsPublicTrueAndStatus(AnalysisStatus.COMPLETE, pageable);
 
             return ResponseEntity.ok(Map.of(
                 "analyses", recentAnalyses.getContent(),
@@ -266,7 +266,7 @@ public class DashboardController {
             
             Page<Analysis> searchResults = analysisRepository
                 .findByQueryContainingIgnoreCaseAndIsPublicTrueAndStatus(
-                    q.trim(), true, AnalysisStatus.COMPLETE, pageable);
+                    q.trim(), AnalysisStatus.COMPLETE, pageable);
 
             return ResponseEntity.ok(Map.of(
                 "query", q,

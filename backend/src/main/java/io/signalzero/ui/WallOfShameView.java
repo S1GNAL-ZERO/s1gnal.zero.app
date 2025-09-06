@@ -432,7 +432,7 @@ public class WallOfShameView extends VerticalLayout {
 
     private void loadWallOfShameData() {
         // Load active Wall of Shame entries using repository
-        List<WallOfShame> wallOfShameItems = wallOfShameRepository.findTop10ByIsActiveTrueOrderByBotPercentageDesc(true);
+        List<WallOfShame> wallOfShameItems = wallOfShameRepository.findTop10ByIsActiveTrueOrderByBotPercentageDesc();
         wallOfShameGrid.setItems(wallOfShameItems);
         
         // Update statistics

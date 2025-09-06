@@ -64,7 +64,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     -- Add to Wall of Shame if bot percentage > 60% and analysis is complete
     IF NEW.status = 'COMPLETE' AND NEW.bot_percentage > 60 AND NEW.is_public = true THEN
-        INSERT INTO wall_of_shame (
+        INSERT INTO signalzero.wall_of_shame (
             analysis_id,
             product_name,
             company,
@@ -111,7 +111,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reset_monthly_usage()
 RETURNS void AS $$
 BEGIN
-    UPDATE users 
+    UPDATE signalzero.users 
     SET analyses_used_this_month = 0,
         last_usage_reset = NOW()
     WHERE DATE_PART('day', NOW()) = 1; -- Reset on first day of month
@@ -122,7 +122,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION increment_user_usage(user_uuid UUID)
 RETURNS void AS $$
 BEGIN
-    UPDATE users 
+    UPDATE signalzero.users 
     SET analyses_used_this_month = analyses_used_this_month + 1,
         analyses_used_total = analyses_used_total + 1
     WHERE id = user_uuid;
@@ -140,7 +140,7 @@ BEGIN
     -- Get user's current usage and tier
     SELECT analyses_used_this_month, subscription_tier 
     INTO current_usage, user_tier
-    FROM users 
+    FROM signalzero.users 
     WHERE id = user_uuid;
     
     -- Determine limit based on tier
@@ -183,8 +183,8 @@ BEGIN
         AVG(a.processing_time_ms::DECIMAL) as avg_processing_time_ms,
         COUNT(CASE WHEN a.created_at > NOW() - INTERVAL '24 hours' THEN 1 END) as analyses_last_24h,
         COUNT(CASE WHEN a.created_at > NOW() - INTERVAL '1 hour' THEN 1 END) as analyses_last_hour
-    FROM users u
-    LEFT JOIN analyses a ON u.id = a.user_id;
+    FROM signalzero.users u
+    LEFT JOIN signalzero.analyses a ON u.id = a.user_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -211,7 +211,7 @@ BEGIN
         w.manipulation_level,
         w.key_findings,
         w.created_at
-    FROM wall_of_shame w
+    FROM signalzero.wall_of_shame w
     WHERE w.is_active = true 
       AND (w.featured_until IS NULL OR w.featured_until > NOW())
     ORDER BY w.bot_percentage DESC, w.created_at DESC
@@ -231,17 +231,17 @@ DECLARE
 BEGIN
     -- Find referrer by code
     SELECT id INTO referrer_user_id
-    FROM users 
+    FROM signalzero.users 
     WHERE referral_code = referrer_code;
     
     IF referrer_user_id IS NOT NULL THEN
         -- Update new user's referred_by
-        UPDATE users 
+        UPDATE signalzero.users 
         SET referred_by = referrer_user_id
         WHERE id = new_user_id;
         
         -- Increment referrer's count
-        UPDATE users 
+        UPDATE signalzero.users 
         SET referral_count = referral_count + 1
         WHERE id = referrer_user_id;
     END IF;
@@ -257,22 +257,22 @@ CREATE OR REPLACE FUNCTION cleanup_old_data()
 RETURNS void AS $$
 BEGIN
     -- Delete old incomplete analyses (older than 24 hours)
-    DELETE FROM analyses 
+    DELETE FROM signalzero.analyses 
     WHERE status IN ('PENDING', 'PROCESSING', 'FAILED') 
       AND created_at < NOW() - INTERVAL '24 hours';
     
     -- Delete old agent results for deleted analyses
-    DELETE FROM agent_results 
-    WHERE analysis_id NOT IN (SELECT id FROM analyses);
+    DELETE FROM signalzero.agent_results 
+    WHERE analysis_id NOT IN (SELECT id FROM signalzero.analyses);
     
     -- Archive old marketing events (older than 30 days)
-    UPDATE marketing_events 
+    UPDATE signalzero.marketing_events 
     SET status = 'ARCHIVED'
     WHERE created_at < NOW() - INTERVAL '30 days'
       AND status != 'ARCHIVED';
       
     -- Clean up expired API keys
-    UPDATE api_keys 
+    UPDATE signalzero.api_keys 
     SET is_active = false
     WHERE expires_at < NOW() 
       AND is_active = true;
@@ -284,32 +284,32 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Trigger to automatically update manipulation level when Reality Score is set/updated
-DROP TRIGGER IF EXISTS trg_update_manipulation ON analyses;
+DROP TRIGGER IF EXISTS trg_update_manipulation ON signalzero.analyses;
 CREATE TRIGGER trg_update_manipulation
-    BEFORE INSERT OR UPDATE ON analyses
+    BEFORE INSERT OR UPDATE ON signalzero.analyses
     FOR EACH ROW
     WHEN (NEW.reality_score IS NOT NULL)
     EXECUTE FUNCTION update_manipulation_level();
 
 -- Trigger to automatically add high-bot products to Wall of Shame
-DROP TRIGGER IF EXISTS trg_auto_wall_of_shame ON analyses;
+DROP TRIGGER IF EXISTS trg_auto_wall_of_shame ON signalzero.analyses;
 CREATE TRIGGER trg_auto_wall_of_shame
-    AFTER INSERT OR UPDATE ON analyses
+    AFTER INSERT OR UPDATE ON signalzero.analyses
     FOR EACH ROW
     WHEN (NEW.status = 'COMPLETE' AND NEW.bot_percentage > 60)
     EXECUTE FUNCTION auto_add_to_wall_of_shame();
 
 -- Trigger to update updated_at timestamp on users table
-DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+DROP TRIGGER IF EXISTS trg_users_updated_at ON signalzero.users;
 CREATE TRIGGER trg_users_updated_at
-    BEFORE UPDATE ON users
+    BEFORE UPDATE ON signalzero.users
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger to update updated_at timestamp on wall_of_shame table
-DROP TRIGGER IF EXISTS trg_wall_of_shame_updated_at ON wall_of_shame;
+DROP TRIGGER IF EXISTS trg_wall_of_shame_updated_at ON signalzero.wall_of_shame;
 CREATE TRIGGER trg_wall_of_shame_updated_at
-    BEFORE UPDATE ON wall_of_shame
+    BEFORE UPDATE ON signalzero.wall_of_shame
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
@@ -325,7 +325,7 @@ SELECT
     AVG(bot_percentage) as avg_bot_percentage,
     AVG(processing_time_ms) as avg_processing_time,
     COUNT(DISTINCT user_id) as unique_users
-FROM analyses
+FROM signalzero.analyses
 WHERE created_at > NOW() - INTERVAL '7 days'
   AND status = 'COMPLETE'
 GROUP BY DATE_TRUNC('hour', created_at)

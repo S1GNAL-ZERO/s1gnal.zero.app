@@ -34,7 +34,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @Push // REQUIRED for real-time updates (CLAUDE.md requirement)
-@Theme(value = "signalzero", variant = Lumo.DARK)
+@Theme(variant = Lumo.DARK)
 @PWA(
     name = "S1GNAL.ZERO",
     shortName = "S1GNAL.ZERO",
