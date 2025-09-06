@@ -394,7 +394,18 @@ Built with ❤️ by the S1GNAL.ZERO team at AGI Ventures Canada Hackathon 3.0
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under a **Proprietary License** - see the [LICENSE](LICENSE) file for complete terms.
+
+### Key Points:
+- ✅ **Open for Learning**: View and study the code for educational purposes
+- ✅ **Non-Commercial Research**: Use for academic and personal research projects
+- ❌ **Commercial Use Prohibited**: Contact us for commercial licensing
+- ❌ **No Redistribution**: Cannot redistribute or create competing products
+- 🤝 **Commercial Licensing Available**: Enterprise and custom licenses available
+
+For commercial use, enterprise licensing, or custom implementations, contact:
+- **Email**: s1gnal.zero.42@gmail.com
+- **Subject**: "Commercial License Inquiry"
 
 ## 🙏 Acknowledgments
 
