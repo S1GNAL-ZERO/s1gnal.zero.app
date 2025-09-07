@@ -48,8 +48,22 @@ public class RealityScoreGauge extends Div {
         setWidth(GAUGE_SIZE + "px");
         setHeight(GAUGE_SIZE + "px");
         
+        // Set up component-specific CSS variables for self-contained styling
+        setupGaugeThemeVariables();
+        
         createGaugeStructure();
         setInitialScore();
+    }
+
+    /**
+     * Set up CSS custom properties specific to this gauge component.
+     */
+    private void setupGaugeThemeVariables() {
+        getElement().getStyle().set("--ink", "#e8ecff");
+        getElement().getStyle().set("--muted", "#a6b0d8");
+        getElement().getStyle().set("--ok", "#10b981");
+        getElement().getStyle().set("--warn", "#f59e0b");
+        getElement().getStyle().set("--bad", "#ef4444");
     }
 
     /**
@@ -64,18 +78,18 @@ public class RealityScoreGauge extends Div {
         
         // Create SVG markup as HTML string (Vaadin Flow approach)
         String svgContent = String.format("""
-            <svg width="%d" height="%d" class="gauge-svg">
+            <svg width="%d" height="%d" class="gauge-svg" style="overflow: visible;">
                 <!-- Background circle -->
                 <circle cx="%d" cy="%d" r="%d" 
                         class="gauge-circle" 
-                        stroke="var(--lumo-contrast-20pct)" 
+                        stroke="rgba(232, 236, 255, 0.2)" 
                         stroke-width="%d" 
                         fill="none"/>
                         
                 <!-- Progress circle -->
                 <circle cx="%d" cy="%d" r="%d" 
                         class="gauge-progress" 
-                        stroke="var(--s1gnal-primary)" 
+                        stroke="#667eea" 
                         stroke-width="%d" 
                         fill="none"
                         stroke-linecap="round"
@@ -86,13 +100,13 @@ public class RealityScoreGauge extends Div {
                         
                 <!-- Center dot -->
                 <circle cx="%d" cy="%d" r="4" 
-                        fill="var(--s1gnal-primary)"/>
+                        fill="#667eea"/>
             </svg>
             """,
             GAUGE_SIZE, GAUGE_SIZE,
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
-            CIRCUMFERENCE, CIRCUMFERENCE, // Initial: no progress
+            CIRCUMFERENCE, CIRCUMFERENCE, // Initial: no progress (fully hidden)
             GAUGE_SIZE/2, GAUGE_SIZE/2,
             GAUGE_SIZE/2, GAUGE_SIZE/2
         );
@@ -111,7 +125,7 @@ public class RealityScoreGauge extends Div {
         scoreText = new Span("--");
         scoreText.addClassName("gauge-text");
         scoreText.getStyle().set("display", "block");
-        scoreText.getStyle().set("color", "var(--s1gnal-text)");
+        scoreText.getStyle().set("color", "var(--ink)");
         scoreText.getStyle().set("font-size", "2.5rem");
         scoreText.getStyle().set("font-weight", "bold");
         scoreText.getStyle().set("line-height", "1");
@@ -119,13 +133,13 @@ public class RealityScoreGauge extends Div {
         labelText = new Span("Reality Score™");
         labelText.addClassName("gauge-label");
         labelText.getStyle().set("display", "block");
-        labelText.getStyle().set("color", "var(--s1gnal-text-secondary)");
+        labelText.getStyle().set("color", "var(--muted)");
         labelText.getStyle().set("font-size", "0.8rem");
         labelText.getStyle().set("margin-top", "0.25rem");
         
         botPercentageText = new Span("");
         botPercentageText.getStyle().set("display", "block");
-        botPercentageText.getStyle().set("color", "var(--s1gnal-error)");
+        botPercentageText.getStyle().set("color", "var(--bad)");
         botPercentageText.getStyle().set("font-size", "0.7rem");
         botPercentageText.getStyle().set("margin-top", "0.25rem");
         botPercentageText.getStyle().set("font-weight", "bold");
@@ -142,6 +156,20 @@ public class RealityScoreGauge extends Div {
     private void setInitialScore() {
         scoreText.setText("--");
         botPercentageText.setText("Ready to analyze");
+        
+        // Set initial gauge to show a small progress to make it visible
+        getElement().executeJs("""
+            setTimeout(() => {
+                const circle = $0.querySelector('.gauge-progress');
+                if (circle) {
+                    circle.style.strokeDasharray = $1;
+                    circle.style.strokeDashoffset = $2;
+                    circle.style.stroke = '#f59e0b';
+                    circle.style.opacity = '0.5';
+                }
+            }, 100);
+            """, getElement(), CIRCUMFERENCE, CIRCUMFERENCE * 0.95); // Show 5% to make it visible
+        
         updateGaugeColor(ManipulationLevel.YELLOW);
     }
 
@@ -187,8 +215,8 @@ public class RealityScoreGauge extends Div {
                 const circle = $0.querySelector('.gauge-progress');
                 if (circle) {
                     circle.style.animation = 'spin 2s linear infinite';
-                    circle.style.strokeDasharray = '%f';
-                    circle.style.strokeDashoffset = '%f';
+                    circle.style.strokeDasharray = $1;
+                    circle.style.strokeDashoffset = $2;
                 }
                 """, getElement(), CIRCUMFERENCE * 0.25, CIRCUMFERENCE * 0.75);
             
@@ -218,56 +246,66 @@ public class RealityScoreGauge extends Div {
         double progressPercentage = score / 100.0;
         double dashOffset = CIRCUMFERENCE * (1 - progressPercentage);
         
-        // Update the SVG circle stroke-dashoffset via JavaScript
+        // Update the SVG circle stroke-dashoffset via JavaScript with proper parameter passing
         getElement().executeJs("""
+            console.log('Updating gauge progress to ' + $1 + '% (dashOffset: ' + $2 + ')');
             const circle = $0.querySelector('.gauge-progress');
+            console.log('Found circle element:', circle);
             if (circle) {
-                circle.style.strokeDasharray = '%f';
-                circle.style.strokeDashoffset = '%f';
+                circle.style.strokeDasharray = $3;
+                circle.style.strokeDashoffset = $2;
+                console.log('Updated circle style - dasharray:', circle.style.strokeDasharray, 'dashoffset:', circle.style.strokeDashoffset);
+                console.log('Progress percentage:', $1 + '%', 'CIRCUMFERENCE:', $3, 'dashOffset:', $2);
+            } else {
+                console.error('Could not find .gauge-progress element in:', $0);
+                const allCircles = $0.querySelectorAll('circle');
+                console.log('All circles found:', allCircles);
             }
-            """, getElement(), CIRCUMFERENCE, dashOffset);
+            """, getElement(), score, dashOffset, CIRCUMFERENCE);
     }
 
     /**
      * Update gauge color based on manipulation level.
      */
     private void updateGaugeColor(ManipulationLevel level) {
-        String colorVar;
+        String strokeColor;
         String glowColor;
         
         switch (level) {
             case GREEN:
-                colorVar = "var(--s1gnal-success)";
-                glowColor = "rgba(76, 175, 80, 0.4)";
+                strokeColor = "#10b981"; // --ok color
+                glowColor = "rgba(16, 185, 129, 0.4)";
                 removeClassName("gauge-yellow");
                 removeClassName("gauge-red");
                 addClassName("gauge-green");
                 break;
             case YELLOW:
-                colorVar = "var(--s1gnal-warning)";
-                glowColor = "rgba(255, 152, 0, 0.4)";
+                strokeColor = "#f59e0b"; // --warn color
+                glowColor = "rgba(245, 158, 11, 0.4)";
                 removeClassName("gauge-green");
                 removeClassName("gauge-red");
                 addClassName("gauge-yellow");
                 break;
             case RED:
             default:
-                colorVar = "var(--s1gnal-error)";
-                glowColor = "rgba(244, 67, 54, 0.4)";
+                strokeColor = "#ef4444"; // --bad color
+                glowColor = "rgba(239, 68, 68, 0.4)";
                 removeClassName("gauge-green");
                 removeClassName("gauge-yellow");
                 addClassName("gauge-red");
                 break;
         }
         
-        // Update the SVG circle stroke color via JavaScript
+        // Update the SVG circle stroke color via JavaScript with actual color values
         getElement().executeJs("""
             const circle = $0.querySelector('.gauge-progress');
             if (circle) {
-                circle.style.stroke = '%s';
-                circle.style.filter = 'drop-shadow(0 0 8px %s)';
+                console.log('Updating gauge color to: ' + $1);
+                circle.style.stroke = $1;
+                circle.style.filter = 'drop-shadow(0 0 8px ' + $2 + ')';
+                circle.style.opacity = '1';
             }
-            """, getElement(), colorVar, glowColor);
+            """, getElement(), strokeColor, glowColor);
     }
 
     /**

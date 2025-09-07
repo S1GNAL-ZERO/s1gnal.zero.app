@@ -3,10 +3,7 @@ package io.signalzero.ui;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -238,36 +235,7 @@ public class MainLayout extends AppLayout {
         
         navItems.add(dashboardLink, analyzeLink, historyLink, agentsLink, dataLink, adminLink);
         
-        // Quick Actions
-        Span actionsTitle = new Span("Quick Actions");
-        actionsTitle.addClassName("nav-title");
-        actionsTitle.getStyle().set("font-size", "11px");
-        actionsTitle.getStyle().set("letter-spacing", ".12em");
-        actionsTitle.getStyle().set("color", "var(--muted)");
-        actionsTitle.getStyle().set("text-transform", "uppercase");
-        actionsTitle.getStyle().set("margin", "20px 8px 8px 8px");
-        actionsTitle.getStyle().set("font-weight", "600");
-        
-        // Quick action buttons - more compact
-        Button demoButton = new Button("Demo Analysis");
-        demoButton.addClassName("btn");
-        demoButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-        demoButton.setWidthFull();
-        demoButton.getStyle().set("margin", "4px 8px");
-        demoButton.getStyle().set("font-size", "12px");
-        demoButton.getStyle().set("height", "32px");
-        demoButton.addClickListener(e -> UI.getCurrent().navigate("analyze"));
-        
-        Button memeButton = new Button("Meme Scenario");
-        memeButton.addClassName("btn");
-        memeButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
-        memeButton.setWidthFull();
-        memeButton.getStyle().set("margin", "4px 8px");
-        memeButton.getStyle().set("font-size", "12px");
-        memeButton.getStyle().set("height", "32px");
-        memeButton.addClickListener(e -> UI.getCurrent().navigate("analyze"));
-        
-        drawer.add(navTitle, navItems, actionsTitle, demoButton, memeButton);
+        drawer.add(navTitle, navItems);
         addToDrawer(drawer);
     }
     

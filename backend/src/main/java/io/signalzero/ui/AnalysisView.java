@@ -8,8 +8,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -19,19 +17,16 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
 import io.signalzero.model.AgentResult;
 import io.signalzero.model.Analysis;
 import io.signalzero.model.AnalysisStatus;
 import io.signalzero.repository.AgentResultRepository;
-import io.signalzero.repository.AnalysisRepository;
 import io.signalzero.service.AnalysisService;
 import io.signalzero.ui.components.RealityScoreGauge;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -62,9 +57,6 @@ public class AnalysisView extends VerticalLayout {
     @Autowired
     private AnalysisService analysisService;
     
-    @Autowired 
-    private AnalysisRepository analysisRepository;
-    
     @Autowired
     private AgentResultRepository agentResultRepository;
 
@@ -77,12 +69,15 @@ public class AnalysisView extends VerticalLayout {
     private Checkbox trendPatterningCheckbox;
     private Grid<AgentResult> agentResultsGrid;
     private Div narrativeSummaryDiv;
+    private RealityScoreGauge realityScoreGauge;
+    private Div processingOverlay;
     
     // Real-time update registration
     private Registration broadcasterRegistration;
     
     // Current analysis tracking
     private Analysis currentAnalysis;
+    private String currentAnalysisQuery; // Track by query string for timing fix
 
     /**
      * Initialize the analysis view with all components.
@@ -110,6 +105,7 @@ public class AnalysisView extends VerticalLayout {
         
         createAnalysisForm();
         createResultsSection();
+        createProcessingOverlay();
         
         // Initialize components
         initializeComponents();
@@ -232,23 +228,42 @@ public class AnalysisView extends VerticalLayout {
         VerticalLayout rightColumn = new VerticalLayout();
         rightColumn.setSpacing(true);
         rightColumn.setPadding(false);
+        rightColumn.getStyle().set("margin-left", "20px"); // Add spacing from input field
         
         Span signalsLabel = new Span("Which signals?");
         signalsLabel.addClassName("muted");
         signalsLabel.getStyle().set("color", "var(--muted)");
         
-        // Signal checkboxes
-        HorizontalLayout signalsCheckboxes = new HorizontalLayout();
-        signalsCheckboxes.setSpacing(true);
-        signalsCheckboxes.getStyle().set("margin-top", "8px");
-        signalsCheckboxes.getStyle().set("flex-wrap", "wrap");
+        // Signal checkboxes - reorganize for better layout
+        VerticalLayout signalsContainer = new VerticalLayout();
+        signalsContainer.setSpacing(true);
+        signalsContainer.setPadding(false);
+        signalsContainer.getStyle().set("margin-top", "8px");
+        signalsContainer.getStyle().set("gap", "8px");
+        
+        // First row of checkboxes
+        HorizontalLayout firstRowSignals = new HorizontalLayout();
+        firstRowSignals.setSpacing(true);
+        firstRowSignals.getStyle().set("flex-wrap", "wrap");
+        firstRowSignals.getStyle().set("gap", "8px");
         
         botAnalysisCheckbox = createSignalCheckbox("Bot Analysis", true);
         reviewAuthenticityCheckbox = createSignalCheckbox("Review Authenticity", true);
+        
+        firstRowSignals.add(botAnalysisCheckbox, reviewAuthenticityCheckbox);
+        
+        // Second row of checkboxes
+        HorizontalLayout secondRowSignals = new HorizontalLayout();
+        secondRowSignals.setSpacing(true);
+        secondRowSignals.getStyle().set("flex-wrap", "wrap");
+        secondRowSignals.getStyle().set("gap", "8px");
+        
         paidPromotionCheckbox = createSignalCheckbox("Paid Promotion", true);
         trendPatterningCheckbox = createSignalCheckbox("Trend Patterning", true);
         
-        signalsCheckboxes.add(botAnalysisCheckbox, reviewAuthenticityCheckbox, paidPromotionCheckbox, trendPatterningCheckbox);
+        secondRowSignals.add(paidPromotionCheckbox, trendPatterningCheckbox);
+        
+        signalsContainer.add(firstRowSignals, secondRowSignals);
         
         // Tech stack info
         Span techInfo = new Span("Transport: Solace PubSub+ · Orchestration: Agent Mesh · Backend: Java");
@@ -257,7 +272,7 @@ public class AnalysisView extends VerticalLayout {
         techInfo.getStyle().set("margin-top", "12px");
         techInfo.getStyle().set("font-size", "12px");
         
-        rightColumn.add(signalsLabel, signalsCheckboxes, techInfo);
+        rightColumn.add(signalsLabel, signalsContainer, techInfo);
         
         body.add(leftColumn, rightColumn);
         panel.add(header, body);
@@ -291,13 +306,18 @@ public class AnalysisView extends VerticalLayout {
         resultsLayout.getStyle().set("grid-template-columns", "1fr 1fr");
         resultsLayout.getStyle().set("gap", "20px");
         
-        // Agent Results Panel
+        // Agent Results Panel  
         Div agentResultsPanel = createAgentResultsPanel();
         
-        // Narrative Summary Panel
-        Div narrativeSummaryPanel = createNarrativeSummaryPanel();
+        // Reality Score Panel with Gauge
+        Div realityScorePanel = createRealityScorePanel();
         
-        resultsLayout.add(agentResultsPanel, narrativeSummaryPanel);
+        resultsLayout.add(agentResultsPanel, realityScorePanel);
+        
+        // Add narrative summary below in full width
+        Div narrativeSummaryPanel = createNarrativeSummaryPanel();
+        narrativeSummaryPanel.getStyle().set("grid-column", "1 / -1"); // Full width
+        add(narrativeSummaryPanel);
         add(resultsLayout);
     }
     
@@ -331,6 +351,45 @@ public class AnalysisView extends VerticalLayout {
         
         createAgentResultsGrid();
         body.add(agentResultsGrid);
+        
+        panel.add(header, body);
+        return panel;
+    }
+    
+    /**
+     * Create the Reality Score panel with gauge.
+     */
+    private Div createRealityScorePanel() {
+        Div panel = new Div();
+        panel.addClassName("panel");
+        panel.getStyle().set("background", "var(--panel)");
+        panel.getStyle().set("border", "1px solid #1b2452");
+        panel.getStyle().set("border-radius", "var(--radius)");
+        panel.getStyle().set("box-shadow", "var(--shadow)");
+        
+        // Panel header
+        HorizontalLayout header = new HorizontalLayout();
+        header.addClassName("panel-header");
+        header.getStyle().set("padding", "16px");
+        header.getStyle().set("border-bottom", "1px solid #1b2452");
+        
+        Span title = new Span("Reality Score™");
+        title.addClassName("panel-title");
+        title.getStyle().set("font-weight", "700");
+        
+        header.add(title);
+        
+        // Panel body with gauge
+        Div body = new Div();
+        body.addClassName("panel-body");
+        body.getStyle().set("padding", "16px");
+        body.getStyle().set("display", "flex");
+        body.getStyle().set("justify-content", "center");
+        body.getStyle().set("align-items", "center");
+        
+        // Initialize the Reality Score Gauge
+        realityScoreGauge = new RealityScoreGauge();
+        body.add(realityScoreGauge);
         
         panel.add(header, body);
         return panel;
@@ -375,13 +434,22 @@ public class AnalysisView extends VerticalLayout {
      */
     private void createAgentResultsGrid() {
         agentResultsGrid = new Grid<>(AgentResult.class, false);
-        agentResultsGrid.addClassName("s1gnal-grid");
         agentResultsGrid.setHeight("300px");
+        agentResultsGrid.setWidthFull();
+        
+        // Apply dark theme styling directly
+        agentResultsGrid.getStyle().set("background", "var(--panel)");
+        agentResultsGrid.getStyle().set("border", "1px solid #1b2452");
+        agentResultsGrid.getStyle().set("border-radius", "8px");
+        agentResultsGrid.getStyle().set("color", "var(--ink)");
         
         // Configure columns
-        agentResultsGrid.addColumn(AgentResult::getAgentType)
-            .setHeader("Agent")
-            .setFlexGrow(1);
+        agentResultsGrid.addColumn(new ComponentRenderer<>(result -> {
+            Span agentSpan = new Span(formatAgentName(result.getAgentType()));
+            agentSpan.getStyle().set("color", "var(--ink)");
+            agentSpan.getStyle().set("font-weight", "500");
+            return agentSpan;
+        })).setHeader("Agent").setFlexGrow(1);
             
         agentResultsGrid.addColumn(new ComponentRenderer<>(result -> {
             // Extract key finding from evidence data
@@ -395,14 +463,77 @@ public class AnalysisView extends VerticalLayout {
                     keyFinding = generateKeyFinding(result);
                 }
             }
-            return new Span(keyFinding);
+            Span findingSpan = new Span(keyFinding);
+            findingSpan.getStyle().set("color", "var(--muted)");
+            return findingSpan;
         })).setHeader("Key Finding").setFlexGrow(2);
             
         agentResultsGrid.addColumn(new ComponentRenderer<>(result -> {
             Span scoreSpan = new Span(result.getScore() + "%");
             scoreSpan.getStyle().set("font-weight", "bold");
+            
+            // Color code the score based on value
+            int score = result.getScore().intValue();
+            if (score >= 70) {
+                scoreSpan.getStyle().set("color", "var(--ok)");
+            } else if (score >= 40) {
+                scoreSpan.getStyle().set("color", "var(--warn)");
+            } else {
+                scoreSpan.getStyle().set("color", "var(--bad)");
+            }
+            
             return scoreSpan;
         })).setHeader("Score").setFlexGrow(1);
+    }
+    
+    /**
+     * Format agent type names for better display.
+     */
+    private String formatAgentName(String agentType) {
+        if (agentType == null) return "Unknown";
+        
+        switch (agentType.toLowerCase()) {
+            case "bot-detector":
+                return "Bot Analysis";
+            case "review-validator":
+                return "Review Authenticity";
+            case "paid-promotion":
+                return "Paid Promotion";
+            case "trend-analysis":
+                return "Trend Patterning";
+            case "score-aggregator":
+                return "Score Aggregator";
+            default:
+                // Convert to title case
+                String formatted = agentType.replace("-", " ").replace("_", " ");
+                return capitalizeWords(formatted);
+        }
+    }
+    
+    /**
+     * Capitalize the first letter of each word in a string.
+     */
+    private String capitalizeWords(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = true;
+        
+        for (char c : input.toCharArray()) {
+            if (Character.isWhitespace(c)) {
+                capitalizeNext = true;
+                result.append(c);
+            } else if (capitalizeNext) {
+                result.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                result.append(Character.toLowerCase(c));
+            }
+        }
+        
+        return result.toString();
     }
     
     /**
@@ -439,11 +570,339 @@ public class AnalysisView extends VerticalLayout {
     }
 
     /**
+     * Create the enhanced processing overlay that dims the screen during analysis.
+     * Shows detailed information about what each AI agent is doing with subtle animations.
+     */
+    private void createProcessingOverlay() {
+        processingOverlay = new Div();
+        processingOverlay.addClassName("processing-overlay");
+        
+        // Position as full-screen fixed overlay
+        processingOverlay.getStyle().set("position", "fixed");
+        processingOverlay.getStyle().set("top", "0");
+        processingOverlay.getStyle().set("left", "0");
+        processingOverlay.getStyle().set("width", "100vw");
+        processingOverlay.getStyle().set("height", "100vh");
+        processingOverlay.getStyle().set("background", "rgba(11, 16, 32, 0.9)");
+        processingOverlay.getStyle().set("backdrop-filter", "blur(12px)");
+        processingOverlay.getStyle().set("z-index", "9999");
+        processingOverlay.getStyle().set("display", "none");
+        processingOverlay.getStyle().set("align-items", "center");
+        processingOverlay.getStyle().set("justify-content", "center");
+        processingOverlay.getStyle().set("flex-direction", "column");
+        processingOverlay.getStyle().set("gap", "32px");
+        
+        // Main processing container
+        Div processingContainer = new Div();
+        processingContainer.getStyle().set("background", "rgba(17, 22, 42, 0.95)");
+        processingContainer.getStyle().set("border", "1px solid #2b376f");
+        processingContainer.getStyle().set("border-radius", "20px");
+        processingContainer.getStyle().set("padding", "40px");
+        processingContainer.getStyle().set("max-width", "600px");
+        processingContainer.getStyle().set("width", "90vw");
+        processingContainer.getStyle().set("box-shadow", "0 25px 80px rgba(0,0,0,0.5)");
+        
+        // Header with main spinner and title
+        Div headerSection = new Div();
+        headerSection.getStyle().set("text-align", "center");
+        headerSection.getStyle().set("margin-bottom", "32px");
+        
+        // Main animated processing indicator
+        Div mainSpinner = new Div();
+        mainSpinner.addClassName("main-spinner");
+        mainSpinner.getStyle().set("width", "80px");
+        mainSpinner.getStyle().set("height", "80px");
+        mainSpinner.getStyle().set("border", "4px solid rgba(102, 126, 234, 0.2)");
+        mainSpinner.getStyle().set("border-top", "4px solid var(--brand)");
+        mainSpinner.getStyle().set("border-radius", "50%");
+        mainSpinner.getStyle().set("margin", "0 auto 20px");
+        mainSpinner.getStyle().set("animation", "spin 1.5s linear infinite");
+        
+        // Processing title
+        Span processingTitle = new Span("🔍 AI Agents Analyzing");
+        processingTitle.getStyle().set("font-size", "1.8rem");
+        processingTitle.getStyle().set("font-weight", "700");
+        processingTitle.getStyle().set("color", "var(--ink)");
+        processingTitle.getStyle().set("display", "block");
+        processingTitle.getStyle().set("margin-bottom", "8px");
+        
+        Span processingSubtitle = new Span("Multi-agent authenticity verification in progress");
+        processingSubtitle.getStyle().set("font-size", "1rem");
+        processingSubtitle.getStyle().set("color", "var(--muted)");
+        processingSubtitle.getStyle().set("display", "block");
+        
+        headerSection.add(mainSpinner, processingTitle, processingSubtitle);
+        
+        // Agent activity list
+        Div agentsList = new Div();
+        agentsList.addClassName("agents-list");
+        agentsList.getStyle().set("display", "flex");
+        agentsList.getStyle().set("flex-direction", "column");
+        agentsList.getStyle().set("gap", "16px");
+        
+        // Create agent activity items
+        Div botAgent = createAgentActivityItem("🤖", "Bot Detection Agent", 
+            "Scanning social patterns for automated behavior", 0.5);
+        Div reviewAgent = createAgentActivityItem("⭐", "Review Authenticity Agent", 
+            "Analyzing review patterns and sentiment clustering", 1.0);
+        Div promoAgent = createAgentActivityItem("💰", "Paid Promotion Agent", 
+            "Detecting sponsored content and affiliate signals", 1.5);
+        Div trendAgent = createAgentActivityItem("📈", "Trend Analysis Agent", 
+            "Examining viral growth patterns and timing", 2.0);
+        Div scoreAgent = createAgentActivityItem("🎯", "Score Aggregator Agent", 
+            "Computing final Reality Score from all signals", 2.5);
+        
+        agentsList.add(botAgent, reviewAgent, promoAgent, trendAgent, scoreAgent);
+        
+        // Progress footer
+        Div footerSection = new Div();
+        footerSection.getStyle().set("text-align", "center");
+        footerSection.getStyle().set("margin-top", "24px");
+        footerSection.getStyle().set("padding-top", "24px");
+        footerSection.getStyle().set("border-top", "1px solid #2b376f");
+        
+        Span footerText = new Span("Powered by Solace Agent Mesh and PubSub+ Event Mesh (SAM)");
+        footerText.getStyle().set("font-size", "0.9rem");
+        footerText.getStyle().set("color", "var(--muted)");
+        footerText.getStyle().set("font-style", "italic");
+        
+        footerSection.add(footerText);
+        
+        processingContainer.add(headerSection, agentsList, footerSection);
+        processingOverlay.add(processingContainer);
+        
+        // Add enhanced CSS animations via JavaScript
+        processingOverlay.getElement().executeJs("""
+            if (!document.querySelector('#enhanced-processing-animations')) {
+                const style = document.createElement('style');
+                style.id = 'enhanced-processing-animations';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    @keyframes fadeInUp {
+                        0% { 
+                            opacity: 0; 
+                            transform: translateY(20px); 
+                        }
+                        100% { 
+                            opacity: 1; 
+                            transform: translateY(0); 
+                        }
+                    }
+                    @keyframes pulse {
+                        0%, 100% { 
+                            opacity: 0.6; 
+                            transform: scale(1); 
+                        }
+                        50% { 
+                            opacity: 1; 
+                            transform: scale(1.05); 
+                        }
+                    }
+                    .agent-activity-item {
+                        animation: fadeInUp 0.6s ease-out both;
+                    }
+                    .agent-icon {
+                        animation: pulse 2s ease-in-out infinite;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            """);
+        
+        add(processingOverlay);
+    }
+    
+    /**
+     * Create an individual agent activity item with icon, name, description and staggered animation.
+     */
+    private Div createAgentActivityItem(String icon, String agentName, String description, double animationDelay) {
+        Div agentItem = new Div();
+        agentItem.addClassName("agent-activity-item");
+        agentItem.getStyle().set("display", "flex");
+        agentItem.getStyle().set("align-items", "center");
+        agentItem.getStyle().set("gap", "16px");
+        agentItem.getStyle().set("padding", "12px 16px");
+        agentItem.getStyle().set("background", "rgba(18, 25, 66, 0.6)");
+        agentItem.getStyle().set("border", "1px solid rgba(43, 55, 111, 0.5)");
+        agentItem.getStyle().set("border-radius", "12px");
+        agentItem.getStyle().set("animation-delay", animationDelay + "s");
+        
+        // Agent icon with pulse animation
+        Div iconContainer = new Div();
+        iconContainer.addClassName("agent-icon");
+        iconContainer.getStyle().set("font-size", "1.5rem");
+        iconContainer.getStyle().set("width", "40px");
+        iconContainer.getStyle().set("height", "40px");
+        iconContainer.getStyle().set("display", "flex");
+        iconContainer.getStyle().set("align-items", "center");
+        iconContainer.getStyle().set("justify-content", "center");
+        iconContainer.getStyle().set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+        iconContainer.getStyle().set("border-radius", "10px");
+        iconContainer.getStyle().set("animation-delay", (animationDelay + 1) + "s");
+        iconContainer.setText(icon);
+        
+        // Agent info
+        Div agentInfo = new Div();
+        agentInfo.getStyle().set("flex", "1");
+        
+        Span nameSpan = new Span(agentName);
+        nameSpan.getStyle().set("display", "block");
+        nameSpan.getStyle().set("font-weight", "600");
+        nameSpan.getStyle().set("color", "var(--ink)");
+        nameSpan.getStyle().set("margin-bottom", "4px");
+        
+        Span descSpan = new Span(description);
+        descSpan.getStyle().set("display", "block");
+        descSpan.getStyle().set("font-size", "0.9rem");
+        descSpan.getStyle().set("color", "var(--muted)");
+        descSpan.getStyle().set("line-height", "1.4");
+        
+        agentInfo.add(nameSpan, descSpan);
+        
+        // Status indicator (small pulsing dot)
+        Div statusDot = new Div();
+        statusDot.getStyle().set("width", "8px");
+        statusDot.getStyle().set("height", "8px");
+        statusDot.getStyle().set("background", "var(--ok)");
+        statusDot.getStyle().set("border-radius", "50%");
+        statusDot.getStyle().set("animation", "pulse 1.5s ease-in-out infinite");
+        statusDot.getStyle().set("animation-delay", (animationDelay + 0.5) + "s");
+        
+        agentItem.add(iconContainer, agentInfo, statusDot);
+        return agentItem;
+    }
+    
+    /**
+     * Show the processing overlay with optional custom message.
+     */
+    private void showProcessingOverlay(String message) {
+        if (processingOverlay != null) {
+            // Update message if provided
+            if (message != null && !message.isEmpty()) {
+                processingOverlay.getElement().executeJs("""
+                    const textSpan = $0.querySelector('span');
+                    if (textSpan) textSpan.textContent = $1;
+                    """, processingOverlay.getElement(), message);
+            }
+            
+            processingOverlay.getStyle().set("display", "flex");
+            
+            // Disable all inputs by adding pointer-events: none to the main content
+            getStyle().set("pointer-events", "none");
+            processingOverlay.getStyle().set("pointer-events", "all");
+        }
+    }
+    
+    /**
+     * Hide the processing overlay and re-enable inputs.
+     */
+    private void hideProcessingOverlay() {
+        if (processingOverlay != null) {
+            processingOverlay.getStyle().set("display", "none");
+            getStyle().remove("pointer-events");
+        }
+    }
+
+    /**
      * Initialize component state and data.
      */
     private void initializeComponents() {
-        // Initialize with empty state
+        // Initialize with empty state - don't access repositories in constructor
         agentResultsGrid.setItems();
+        narrativeSummaryDiv.setText("Run an analysis to see the executive summary.");
+    }
+    
+    /**
+     * Load and display the most recent agent results from database.
+     * Also loads the most recent completed analysis to show Reality Score.
+     * This method should only be called after Spring dependency injection is complete.
+     */
+    private void loadRecentAgentResults() {
+        if (agentResultRepository == null || analysisService == null) {
+            System.out.println("DEBUG: Repositories not yet injected, skipping recent results load");
+            return;
+        }
+        
+        try {
+            System.out.println("DEBUG: Loading recent agent results for display...");
+            
+            // Get the most recent agent results regardless of analysis
+            var allAgentResults = agentResultRepository.findAll();
+            System.out.println("DEBUG: Total agent results in database: " + allAgentResults.size());
+            
+            if (!allAgentResults.isEmpty()) {
+                // Show the most recent 5 agent results so user can see them
+                var recentResults = allAgentResults.stream()
+                    .sorted((a1, a2) -> a2.getCreatedAt().compareTo(a1.getCreatedAt()))
+                    .limit(5)
+                    .toList();
+                    
+                System.out.println("DEBUG: Displaying " + recentResults.size() + " recent agent results");
+                recentResults.forEach(ar -> 
+                    System.out.println("  - " + ar.getAgentType() + " for analysis " + ar.getAnalysisId() + 
+                        " (Score: " + ar.getScore() + "%, Status: " + ar.getStatus() + ")"));
+                        
+                agentResultsGrid.setItems(recentResults);
+                
+                // Try to load the most recent completed analysis for Reality Score display
+                if (!recentResults.isEmpty()) {
+                    var mostRecentAnalysisId = recentResults.get(0).getAnalysisId();
+                    System.out.println("DEBUG: Loading analysis " + mostRecentAnalysisId + " for Reality Score");
+                    
+                    try {
+                        var recentAnalysisOptional = analysisService.getAnalysisById(mostRecentAnalysisId);
+                        if (recentAnalysisOptional.isPresent()) {
+                            var recentAnalysis = recentAnalysisOptional.get();
+                            if (recentAnalysis.getRealityScore() != null && 
+                                recentAnalysis.getBotPercentage() != null && 
+                                recentAnalysis.getManipulationLevel() != null) {
+                                
+                                System.out.println("DEBUG: Found complete analysis - updating Reality Score Gauge");
+                                System.out.println("  - Query: " + recentAnalysis.getQuery());
+                                System.out.println("  - Reality Score: " + recentAnalysis.getRealityScore() + "%");
+                                System.out.println("  - Bot Percentage: " + recentAnalysis.getBotPercentage() + "%");
+                                
+                                // Update Reality Score Gauge with recent analysis data
+                                if (realityScoreGauge != null) {
+                                    realityScoreGauge.updateScore(
+                                        recentAnalysis.getRealityScore().intValue(),
+                                        recentAnalysis.getBotPercentage().intValue(),
+                                        recentAnalysis.getManipulationLevel()
+                                    );
+                                }
+                                
+                                // Update narrative summary with the most recent analysis
+                                generateNarrativeSummary(recentAnalysis);
+                            } else {
+                                System.out.println("DEBUG: Recent analysis incomplete or missing data");
+                                narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
+                                    "Total agent results available: " + allAgentResults.size());
+                            }
+                        } else {
+                            System.out.println("DEBUG: Analysis not found for ID: " + mostRecentAnalysisId);
+                            narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
+                                "Total agent results available: " + allAgentResults.size());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("DEBUG: Could not load recent analysis: " + e.getMessage());
+                        narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
+                            "Total agent results available: " + allAgentResults.size());
+                    }
+                }
+                
+            } else {
+                System.out.println("DEBUG: No agent results found in database");
+                narrativeSummaryDiv.setText("No agent results found in database. Run an analysis to generate results.");
+            }
+            
+        } catch (Exception e) {
+            System.out.println("ERROR: Failed to load agent results: " + e.getMessage());
+            e.printStackTrace();
+            narrativeSummaryDiv.setText("Error loading agent results: " + e.getMessage());
+        }
     }
 
     /**
@@ -457,11 +916,27 @@ public class AnalysisView extends VerticalLayout {
             return;
         }
         
+        // Show processing overlay and disable all interactions
+        showProcessingOverlay("🔍 Analyzing '" + query + "' with 5 AI agents...");
+        
         // Disable form during processing
         setFormEnabled(false);
         
+        // Clear previous results
+        agentResultsGrid.setItems();
+        narrativeSummaryDiv.setText("Run an analysis to see the executive summary.");
+        narrativeSummaryDiv.getStyle().set("color", "var(--muted)");
+        
+        // Reset Reality Score Gauge to processing state
+        if (realityScoreGauge != null) {
+            realityScoreGauge.setProcessing(true);
+        }
+        
+        // Set current query for broadcaster matching
+        currentAnalysisQuery = query;
+        
         // Show processing notification
-        showNotification("🔍 Analyzing '" + query + "' with AI agents...", NotificationVariant.LUMO_PRIMARY);
+        showNotification("🔍 Analyzing '" + query + "' with 5 AI agents...", NotificationVariant.LUMO_PRIMARY);
         
         try {
             // Call analysis service - returns Analysis entity
@@ -473,10 +948,12 @@ public class AnalysisView extends VerticalLayout {
                     try {
                         if (throwable != null) {
                             // Handle errors
+                            hideProcessingOverlay();
                             setFormEnabled(true);
                             showNotification("❌ Analysis failed: " + throwable.getMessage(), NotificationVariant.LUMO_ERROR);
                         } else if (analysis != null) {
                             // Handle success
+                            hideProcessingOverlay();
                             currentAnalysis = analysis;
                             updateUIWithAnalysisResult(analysis);
                             setFormEnabled(true);
@@ -487,10 +964,12 @@ public class AnalysisView extends VerticalLayout {
                             showNotification(message, NotificationVariant.LUMO_SUCCESS);
                         } else {
                             // Fallback case
+                            hideProcessingOverlay();
                             setFormEnabled(true);
                             showNotification("❌ Analysis completed but no result returned", NotificationVariant.LUMO_ERROR);
                         }
                     } catch (Exception e) {
+                        hideProcessingOverlay();
                         setFormEnabled(true);
                         showNotification("❌ UI update failed: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
                     }
@@ -498,22 +977,208 @@ public class AnalysisView extends VerticalLayout {
             });
             
         } catch (Exception e) {
+            hideProcessingOverlay();
             setFormEnabled(true);
             showNotification("❌ Error starting analysis: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
         }
     }
 
     /**
+     * Load agent results with retry logic to handle transaction isolation issues.
+     */
+    private java.util.List<AgentResult> loadAgentResultsWithRetry(java.util.UUID analysisId) {
+        int maxRetries = 3;
+        long retryDelayMs = 100;
+        
+        for (int retry = 0; retry < maxRetries; retry++) {
+            try {
+                // Add small delay to allow transaction commit
+                if (retry > 0) {
+                    Thread.sleep(retryDelayMs);
+                    System.out.println("DEBUG: Retry " + retry + " for agent results query");
+                }
+                
+                // Query with explicit transaction boundary
+                var results = agentResultRepository.findByAnalysisIdOrderByCreatedAtAsc(analysisId);
+                
+                if (!results.isEmpty() || retry == maxRetries - 1) {
+                    System.out.println("DEBUG: Query attempt " + (retry + 1) + " found " + results.size() + " results");
+                    return results;
+                }
+                
+                // If empty and not last retry, continue to next iteration
+                System.out.println("DEBUG: Query attempt " + (retry + 1) + " found 0 results, retrying...");
+                
+            } catch (Exception e) {
+                System.out.println("DEBUG: Query attempt " + (retry + 1) + " failed: " + e.getMessage());
+                if (retry == maxRetries - 1) {
+                    // Last retry failed, return empty list
+                    return java.util.Collections.emptyList();
+                }
+            }
+        }
+        
+        return java.util.Collections.emptyList();
+    }
+    
+    /**
+     * Load analysis with retry logic to handle transaction isolation issues.
+     */
+    private Analysis loadAnalysisWithRetry(java.util.UUID analysisId) {
+        int maxRetries = 3;
+        long retryDelayMs = 100;
+        
+        for (int retry = 0; retry < maxRetries; retry++) {
+            try {
+                // Add small delay to allow transaction commit
+                if (retry > 0) {
+                    Thread.sleep(retryDelayMs);
+                    System.out.println("DEBUG: Retry " + retry + " for analysis data query");
+                }
+                
+                // Query with explicit transaction boundary
+                var analysisOptional = analysisService.getAnalysisById(analysisId);
+                
+                if (analysisOptional.isPresent()) {
+                    var analysis = analysisOptional.get();
+                    
+                    // Check if we have complete data (Reality Score, Bot Percentage, etc.)
+                    boolean hasCompleteData = analysis.getRealityScore() != null && 
+                                            analysis.getBotPercentage() != null && 
+                                            analysis.getManipulationLevel() != null;
+                    
+                    if (hasCompleteData || retry == maxRetries - 1) {
+                        System.out.println("DEBUG: Analysis query attempt " + (retry + 1) + 
+                            " - Reality Score: " + analysis.getRealityScore() + 
+                            ", Bot %: " + analysis.getBotPercentage() + 
+                            ", Complete: " + hasCompleteData);
+                        return analysis;
+                    }
+                    
+                    // If incomplete and not last retry, continue to next iteration
+                    System.out.println("DEBUG: Analysis query attempt " + (retry + 1) + " - incomplete data, retrying...");
+                } else {
+                    System.out.println("DEBUG: Analysis query attempt " + (retry + 1) + " - not found, retrying...");
+                }
+                
+            } catch (Exception e) {
+                System.out.println("DEBUG: Analysis query attempt " + (retry + 1) + " failed: " + e.getMessage());
+                if (retry == maxRetries - 1) {
+                    // Last retry failed, return null
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
      * Update UI components with analysis results from entity.
      */
     private void updateUIWithAnalysisResult(Analysis analysis) {
-        if (analysis != null && analysis.getStatus() == AnalysisStatus.COMPLETE) {
-            // Load agent results from repository
-            var agentResults = agentResultRepository.findByAnalysisIdOrderByCreatedAtAsc(analysis.getId());
+        if (analysis != null) {
+            // Always show what data we have, regardless of status
+            System.out.println("DEBUG: Updating UI with analysis: " + analysis.getQuery() + 
+                ", Status: " + analysis.getStatus() + 
+                ", Reality Score: " + analysis.getRealityScore() + 
+                ", Bot Percentage: " + analysis.getBotPercentage() + 
+                ", Analysis ID: " + analysis.getId());
+            
+            // Load agent results with transaction isolation fix
+            var agentResults = loadAgentResultsWithRetry(analysis.getId());
+            System.out.println("DEBUG: Querying for analysis ID: " + analysis.getId());
+            System.out.println("DEBUG: Found " + agentResults.size() + " agent results");
+            
+            // If no results found, try to get a list of all agent results to debug
+            if (agentResults.isEmpty()) {
+                var allAgentResults = agentResultRepository.findAll();
+                System.out.println("DEBUG: Total agent results in database: " + allAgentResults.size());
+                if (!allAgentResults.isEmpty()) {
+                    System.out.println("DEBUG: Sample analysis IDs in database:");
+                    allAgentResults.stream().limit(5).forEach(ar -> 
+                        System.out.println("  - " + ar.getAnalysisId() + " (" + ar.getAgentType() + ")"));
+                }
+            }
+            
             agentResultsGrid.setItems(agentResults);
             
-            // Generate narrative summary
-            generateNarrativeSummary(analysis);
+            // Store reference to potentially updated analysis for consistent UI updates
+            Analysis finalAnalysis = analysis;
+            
+            // Update Reality Score Gauge - use retry logic if data is missing
+            if (realityScoreGauge != null) {
+                if (analysis.getRealityScore() != null && 
+                    analysis.getBotPercentage() != null && 
+                    analysis.getManipulationLevel() != null) {
+                    
+                    // We have complete data, update immediately
+                    System.out.println("DEBUG: Updating Reality Score Gauge with complete data");
+                    System.out.println("DEBUG: Reality Score: " + analysis.getRealityScore());
+                    System.out.println("DEBUG: Bot Percentage: " + analysis.getBotPercentage());
+                    System.out.println("DEBUG: Manipulation Level: " + analysis.getManipulationLevel());
+                    
+                    realityScoreGauge.setProcessing(false);
+                    realityScoreGauge.updateScore(
+                        analysis.getRealityScore().intValue(),
+                        analysis.getBotPercentage().intValue(), 
+                        analysis.getManipulationLevel()
+                    );
+                } else {
+                    // Missing data - try retry logic to get fresh analysis data
+                    System.out.println("DEBUG: Reality Score Gauge missing data - trying retry logic");
+                    System.out.println("  - Reality Score: " + analysis.getRealityScore());
+                    System.out.println("  - Bot Percentage: " + analysis.getBotPercentage());
+                    System.out.println("  - Manipulation Level: " + analysis.getManipulationLevel());
+                    
+                    try {
+                        Analysis freshAnalysis = loadAnalysisWithRetry(analysis.getId());
+                        if (freshAnalysis != null && 
+                            freshAnalysis.getRealityScore() != null && 
+                            freshAnalysis.getBotPercentage() != null && 
+                            freshAnalysis.getManipulationLevel() != null) {
+                            
+                            System.out.println("DEBUG: Retry successful - updating Reality Score Gauge");
+                            System.out.println("  - Fresh Reality Score: " + freshAnalysis.getRealityScore());
+                            System.out.println("  - Fresh Bot Percentage: " + freshAnalysis.getBotPercentage());
+                            System.out.println("  - Fresh Manipulation Level: " + freshAnalysis.getManipulationLevel());
+                            
+                            realityScoreGauge.setProcessing(false);
+                            realityScoreGauge.updateScore(
+                                freshAnalysis.getRealityScore().intValue(),
+                                freshAnalysis.getBotPercentage().intValue(), 
+                                freshAnalysis.getManipulationLevel()
+                            );
+                            
+                            // Use the fresh analysis for all subsequent UI updates
+                            finalAnalysis = freshAnalysis;
+                        } else {
+                            System.out.println("DEBUG: Retry failed - Reality Score Gauge data still missing");
+                            
+                            // Keep gauge in processing state if analysis is still processing
+                            if (analysis.getStatus() == AnalysisStatus.PROCESSING) {
+                                realityScoreGauge.setProcessing(true);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("DEBUG: Exception during Reality Score Gauge retry: " + e.getMessage());
+                        
+                        // Keep gauge in processing state if analysis is still processing
+                        if (analysis.getStatus() == AnalysisStatus.PROCESSING) {
+                            realityScoreGauge.setProcessing(true);
+                        }
+                    }
+                }
+            }
+            
+            // Generate narrative summary using the potentially updated analysis
+            if (finalAnalysis.getRealityScore() != null && finalAnalysis.getBotPercentage() != null) {
+                generateNarrativeSummary(finalAnalysis);
+            } else {
+                // Show processing message
+                narrativeSummaryDiv.setText("🔍 AI agents are analyzing '" + finalAnalysis.getQuery() + "'...");
+                narrativeSummaryDiv.getStyle().set("color", "var(--muted)");
+            }
         }
     }
     
@@ -521,6 +1186,14 @@ public class AnalysisView extends VerticalLayout {
      * Generate executive summary for the analysis.
      */
     private void generateNarrativeSummary(Analysis analysis) {
+        // Check for null values to prevent NullPointerException
+        if (analysis.getRealityScore() == null || analysis.getBotPercentage() == null) {
+            System.out.println("DEBUG: Cannot generate narrative summary - missing data");
+            narrativeSummaryDiv.setText("🔍 AI agents are analyzing '" + analysis.getQuery() + "'...");
+            narrativeSummaryDiv.getStyle().set("color", "var(--muted)");
+            return;
+        }
+        
         StringBuilder summary = new StringBuilder();
         summary.append("<p><strong>").append(analysis.getQuery()).append("</strong> ");
         
@@ -600,14 +1273,32 @@ public class AnalysisView extends VerticalLayout {
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
         
+        // Load recent agent results now that Spring injection is complete
+        loadRecentAgentResults();
+        
         // Register for real-time analysis updates
         UI ui = attachEvent.getUI();
         broadcasterRegistration = AnalysisUpdateBroadcaster.register(analysis -> {
             ui.access(() -> {
-                // Update current analysis if it matches
-                if (currentAnalysis != null && 
-                    currentAnalysis.getId().equals(analysis.getId())) {
+                // Update if this matches our current query (fix timing issue)
+                if (currentAnalysisQuery != null && 
+                    currentAnalysisQuery.equalsIgnoreCase(analysis.getQuery().trim())) {
+                    
+                    // Set current analysis if not already set
+                    if (currentAnalysis == null) {
+                        currentAnalysis = analysis;
+                    }
+                    
                     updateUIWithAnalysisResult(analysis);
+                    
+                    // Show completion notification if analysis is complete
+                    if (analysis.getStatus() == AnalysisStatus.COMPLETE) {
+                        hideProcessingOverlay();
+                        String message = String.format("✅ Analysis complete! %s has %s%% Reality Score", 
+                            analysis.getQuery(), analysis.getRealityScore());
+                        showNotification(message, NotificationVariant.LUMO_SUCCESS);
+                        setFormEnabled(true);
+                    }
                 }
             });
         });

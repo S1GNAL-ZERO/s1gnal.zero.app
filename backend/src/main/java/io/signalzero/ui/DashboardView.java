@@ -634,7 +634,7 @@ public class DashboardView extends VerticalLayout {
         realityScoreGauge.setProcessing(true);
         
         // Show processing notification
-        showNotification("🔍 Analyzing '" + query + "' with AI agents...", NotificationVariant.LUMO_PRIMARY);
+        showNotification("🔍 Analyzing '" + query + "' with 5 AI agents...", NotificationVariant.LUMO_PRIMARY);
         
         try {
             // Call analysis service - returns Analysis entity

@@ -165,49 +165,6 @@ public class AnalysisService {
         return BigDecimal.valueOf(realityInt);
     }
     
-    /**
-     * Create mock agent results for demo
-     */
-    private void createMockAgentResults(Analysis analysis, BigDecimal botPercentage, BigDecimal realityScore) {
-        // Bot Detection Agent result
-        AgentResult botResult = new AgentResult(analysis.getId(), "bot-detector");
-        botResult.setScore(BigDecimal.valueOf(100).subtract(botPercentage)); // Invert for score
-        botResult.setConfidence(BigDecimal.valueOf(92 + (analysis.getQuery().hashCode() % 8)));
-        botResult.setStatus(AnalysisStatus.COMPLETE);
-        botResult.setProcessingTimeMs(800 + (analysis.getQuery().hashCode() % 700));
-        Map<String, Object> botEvidence = new HashMap<>();
-        botEvidence.put("bot_accounts", botPercentage.intValue() * 100);
-        botEvidence.put("suspicious_patterns", true);
-        botEvidence.put("cluster_detected", botPercentage.intValue() > 60);
-        botResult.setEvidence(botEvidence);
-        agentResultRepository.save(botResult);
-        
-        // Trend Analysis Agent result
-        AgentResult trendResult = new AgentResult(analysis.getId(), "trend-analyzer");
-        BigDecimal trendScore = BigDecimal.valueOf(30 + (analysis.getQuery().hashCode() % 40));
-        trendResult.setScore(trendScore);
-        trendResult.setConfidence(BigDecimal.valueOf(85 + (analysis.getQuery().hashCode() % 10)));
-        trendResult.setStatus(AnalysisStatus.COMPLETE);
-        trendResult.setProcessingTimeMs(1200 + (analysis.getQuery().hashCode() % 800));
-        agentResultRepository.save(trendResult);
-        
-        // Score Aggregator result (calculates final Reality Score)
-        AgentResult aggregatorResult = new AgentResult(analysis.getId(), "score-aggregator");
-        aggregatorResult.setScore(realityScore);
-        aggregatorResult.setConfidence(BigDecimal.valueOf(90 + (analysis.getQuery().hashCode() % 8)));
-        aggregatorResult.setStatus(AnalysisStatus.COMPLETE);
-        aggregatorResult.setProcessingTimeMs(300 + (analysis.getQuery().hashCode() % 200));
-        Map<String, Object> aggregatorEvidence = new HashMap<>();
-        aggregatorEvidence.put("weighted_calculation", "Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%");
-        aggregatorEvidence.put("bot_weight", 0.4);
-        aggregatorEvidence.put("trend_weight", 0.3);
-        aggregatorEvidence.put("review_weight", 0.2);
-        aggregatorEvidence.put("promotion_weight", 0.1);
-        aggregatorResult.setEvidence(aggregatorEvidence);
-        agentResultRepository.save(aggregatorResult);
-        
-        logger.info("Created {} mock agent results for analysis ID: {}", 3, analysis.getId());
-    }
     
     /**
      * Handle agent response completion
@@ -380,19 +337,54 @@ public class AnalysisService {
                 Duration processingTime = Duration.between(completedAnalysis.getStartedAt(), completedAnalysis.getCompletedAt());
                 completedAnalysis.setProcessingTimeMs((int) processingTime.toMillis());
                 
+                // Save analysis first, then create agent results
+                logger.info("💾 Saving completed analysis entity...");
                 completedAnalysis = analysisRepository.save(completedAnalysis);
+                logger.info("✅ Analysis entity saved with ID: {}", completedAnalysis.getId());
+                
+                // Create agent results for demo UI - these must be created AFTER saving the analysis
+                logger.info("🤖 About to create mock agent results - Thread: {}, Time: {}", 
+                            Thread.currentThread().getName(), System.currentTimeMillis());
+                createMockAgentResults(completedAnalysis, completedAnalysis.getBotPercentage(), completedAnalysis.getRealityScore());
+                logger.info("🤖 Mock agent results creation completed - Thread: {}, Time: {}", 
+                            Thread.currentThread().getName(), System.currentTimeMillis());
+                
+                // Flush to ensure transaction commits before broadcasting
+                logger.info("🔄 Flushing analysis repository...");
+                analysisRepository.flush();
+                logger.info("✅ Analysis repository flushed");
+                
+                // Post-flush verification
+                long verifyCount = agentResultRepository.countByAnalysisId(completedAnalysis.getId());
+                logger.info("🔍 POST-FLUSH VERIFICATION: Found {} agent results for analysis ID: {}", 
+                            verifyCount, completedAnalysis.getId());
+                
+                // Give the database a moment to commit
+                logger.info("⏰ Waiting 100ms for transaction commit...");
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                logger.info("⏰ Wait complete, proceeding with broadcast...");
             }
             
             // 🔥 PUBLISH FINAL RESULTS TO SOLACE
+            logger.info("📡 Publishing score update to Solace - AnalysisID: {}, Thread: {}, Time: {}", 
+                        completedAnalysis.getId(), Thread.currentThread().getName(), System.currentTimeMillis());
             solacePublisher.publishScoreUpdate(completedAnalysis.getId().toString(), 
                                              completedAnalysis.getBotPercentage().intValue(),
                                              completedAnalysis.getRealityScore().intValue());
             
+            logger.info("📡 Publishing status update to Solace - AnalysisID: {}", completedAnalysis.getId());
             solacePublisher.publishStatusUpdate(completedAnalysis.getId().toString(), 
                                               "COMPLETE", 
                                               "Analysis complete with " + completedAnalysis.getRealityScore().intValue() + "% Reality Score");
             
+            logger.info("📢 Broadcasting completion to UI - AnalysisID: {}, Thread: {}, Time: {}", 
+                        completedAnalysis.getId(), Thread.currentThread().getName(), System.currentTimeMillis());
             AnalysisUpdateBroadcaster.broadcastCompletion(completedAnalysis);
+            logger.info("📢 UI broadcast completed for AnalysisID: {}", completedAnalysis.getId());
             
             // Add to Wall of Shame if needed
             addToWallOfShameIfNeeded(completedAnalysis);
@@ -421,18 +413,25 @@ public class AnalysisService {
                 return;
             }
             
-            // Create Wall of Shame entry
-            WallOfShame wallEntry = new WallOfShame(analysis);
-            
-            // Set company based on query for demo
-            String query = analysis.getQuery().toLowerCase();
-            if (query.contains("stanley")) {
-                wallEntry.setCompany("Stanley");
-            } else if (query.contains("prime")) {
-                wallEntry.setCompany("Prime Hydration LLC");
-            } else if (query.contains("$buzz")) {
-                wallEntry.setCompany("Unknown Crypto Project");
-            }
+        // Create Wall of Shame entry
+        WallOfShame wallEntry = new WallOfShame(analysis);
+        
+        // Set company based on query for demo
+        String query = analysis.getQuery().toLowerCase();
+        if (query.contains("stanley")) {
+            wallEntry.setCompany("Stanley");
+        } else if (query.contains("prime")) {
+            wallEntry.setCompany("Prime Hydration LLC");
+        } else if (query.contains("$buzz")) {
+            wallEntry.setCompany("Unknown Crypto Project");
+        }
+        
+        // Set key findings as proper JSON array
+        String keyFindingsJson = String.format("[\"%s%% bots detected\", \"Reality Score: %s%%\", \"%s manipulation level\"]", 
+                                              analysis.getBotPercentage().intValue(),
+                                              analysis.getRealityScore().intValue(),
+                                              analysis.getManipulationLevel().name().toLowerCase());
+        wallEntry.setKeyFindings(keyFindingsJson);
             
             wallOfShameRepository.save(wallEntry);
             
@@ -466,50 +465,70 @@ public class AnalysisService {
     }
     
     /**
-     * Get user's analyses
-     */
-    @Transactional(readOnly = true)
-    public List<Analysis> getUserAnalyses(UUID userId) {
-        return analysisRepository.findByUserIdOrderByCreatedAtDesc(userId);
-    }
-    
-    /**
-     * Get public analyses for dashboard
-     */
-    @Transactional(readOnly = true)
-    public List<Analysis> getPublicAnalyses(int limit) {
-        return analysisRepository.findByIsPublicTrueOrderByCreatedAtDesc()
-                .stream().limit(limit).toList();
-    }
-    
-    /**
-     * Get Wall of Shame analyses
-     */
-    @Transactional(readOnly = true)
-    public List<Analysis> getWallOfShameAnalyses() {
-        return analysisRepository.findHighBotAnalyses(BigDecimal.valueOf(60));
-    }
-    
-    /**
-     * Handle analysis timeout
+     * Create mock agent results for demo
      */
     @Transactional
-    public void handleAnalysisTimeout(UUID analysisId) {
-        logger.warn("Analysis {} has timed out", analysisId);
+    private void createMockAgentResults(Analysis analysis, BigDecimal botPercentage, BigDecimal realityScore) {
+        logger.info("Creating mock agent results for analysis ID: {}", analysis.getId());
         
-        Optional<Analysis> analysisOpt = analysisRepository.findById(analysisId);
-        if (analysisOpt.isPresent()) {
-            Analysis analysis = analysisOpt.get();
-            if (analysis.isInProgress()) {
-                // Fallback to demo values for timeout
-                if (hasHardcodedResult(analysis.getQuery())) {
-                    processHardcodedAnalysis(analysis);
-                } else {
-                    analysis.failAnalysis("Analysis timed out after " + analysisTimeoutSeconds + " seconds");
-                    analysisRepository.save(analysis);
-                }
-            }
-        }
+        // Bot Detection Agent result
+        AgentResult botResult = new AgentResult(analysis.getId(), "bot-detector");
+        botResult.setScore(BigDecimal.valueOf(100).subtract(botPercentage)); // Invert for score
+        botResult.setConfidence(BigDecimal.valueOf(92 + (analysis.getQuery().hashCode() % 8)));
+        botResult.setStatus(AnalysisStatus.COMPLETE);
+        botResult.setProcessingTimeMs(800 + (analysis.getQuery().hashCode() % 700));
+        Map<String, Object> botEvidence = new HashMap<>();
+        botEvidence.put("bot_accounts", botPercentage.intValue() * 100);
+        botEvidence.put("suspicious_patterns", true);
+        botEvidence.put("cluster_detected", botPercentage.intValue() > 60);
+        botEvidence.put("keyFinding", botPercentage.intValue() > 60 ? "High bot activity detected" : 
+                       botPercentage.intValue() > 30 ? "Moderate bot presence" : "Low bot activity");
+        botResult.setEvidence(botEvidence);
+        botResult = agentResultRepository.saveAndFlush(botResult);
+        logger.info("Saved bot-detector result: {} (ID: {})", botResult.getScore(), botResult.getId());
+        
+        // Trend Analysis Agent result
+        AgentResult trendResult = new AgentResult(analysis.getId(), "trend-analyzer");
+        BigDecimal trendScore = BigDecimal.valueOf(30 + (analysis.getQuery().hashCode() % 40));
+        trendResult.setScore(trendScore);
+        trendResult.setConfidence(BigDecimal.valueOf(85 + (analysis.getQuery().hashCode() % 10)));
+        trendResult.setStatus(AnalysisStatus.COMPLETE);
+        trendResult.setProcessingTimeMs(1200 + (analysis.getQuery().hashCode() % 800));
+        Map<String, Object> trendEvidence = new HashMap<>();
+        trendEvidence.put("trend_velocity", trendScore.intValue() > 70 ? "Organic growth" : 
+                         trendScore.intValue() > 40 ? "Accelerated pattern" : "Artificial spike");
+        trendEvidence.put("keyFinding", trendScore.intValue() > 70 ? "Organic trend growth" :
+                         trendScore.intValue() > 40 ? "Accelerated trend pattern" : "Artificial trend spike");
+        trendResult.setEvidence(trendEvidence);
+        trendResult = agentResultRepository.saveAndFlush(trendResult);
+        logger.info("Saved trend-analyzer result: {} (ID: {})", trendResult.getScore(), trendResult.getId());
+        
+        // Score Aggregator result (calculates final Reality Score)
+        AgentResult aggregatorResult = new AgentResult(analysis.getId(), "score-aggregator");
+        aggregatorResult.setScore(realityScore);
+        aggregatorResult.setConfidence(BigDecimal.valueOf(90 + (analysis.getQuery().hashCode() % 8)));
+        aggregatorResult.setStatus(AnalysisStatus.COMPLETE);
+        aggregatorResult.setProcessingTimeMs(300 + (analysis.getQuery().hashCode() % 200));
+        Map<String, Object> aggregatorEvidence = new HashMap<>();
+        aggregatorEvidence.put("weighted_calculation", "Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%");
+        aggregatorEvidence.put("bot_weight", 0.4);
+        aggregatorEvidence.put("trend_weight", 0.3);
+        aggregatorEvidence.put("review_weight", 0.2);
+        aggregatorEvidence.put("promotion_weight", 0.1);
+        aggregatorEvidence.put("keyFinding", realityScore.intValue() > 66 ? "High authenticity" :
+                              realityScore.intValue() > 33 ? "Mixed signals" : "Low authenticity");
+        aggregatorResult.setEvidence(aggregatorEvidence);
+        aggregatorResult = agentResultRepository.saveAndFlush(aggregatorResult);
+        logger.info("Saved score-aggregator result: {} (ID: {})", aggregatorResult.getScore(), aggregatorResult.getId());
+        
+        // Force flush to ensure all entities are persisted immediately
+        agentResultRepository.flush();
+        
+        logger.info("Created {} mock agent results for analysis ID: {}", 3, analysis.getId());
+        
+        // Verify they were saved by doing a quick count
+        long count = agentResultRepository.countByAnalysisId(analysis.getId());
+        logger.info("Verification: Found {} agent results for analysis ID: {}", count, analysis.getId());
     }
     
     // ========== PRIVATE UTILITY METHODS ==========
@@ -544,11 +563,14 @@ public class AnalysisService {
             return existingUser.get();
         }
         
-        // Create anonymous user for demo
+        // Create anonymous user for demo with dummy password hash
         User anonymousUser = new User();
         anonymousUser.setEmail("anonymous@signalzero.ai");
         anonymousUser.setFullName("Anonymous User");
+        anonymousUser.setPasswordHash("anonymous_dummy_hash_12345"); // Dummy hash to satisfy validation
         anonymousUser.setSubscriptionTier(SubscriptionTier.FREE);
+        anonymousUser.setIsActive(true);
+        anonymousUser.setIsVerified(true); // Mark as verified since it's a system user
         
         return userRepository.save(anonymousUser);
     }

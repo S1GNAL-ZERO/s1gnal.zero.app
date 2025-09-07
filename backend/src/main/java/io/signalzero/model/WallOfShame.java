@@ -6,7 +6,9 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -66,6 +68,7 @@ public class WallOfShame {
     private String evidenceSummary;
     
     @Column(name = "key_findings", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String keyFindings; // JSON array as string for compatibility
     
     // Engagement metrics
