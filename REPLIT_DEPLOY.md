@@ -35,29 +35,39 @@ This guide explains how to deploy and run S1GNAL.ZERO on Replit for demonstratio
 
 ## 🏗️ Architecture for Replit
 
-### Components Running in Demo Mode
+### Hybrid Production Setup
 
-- **Backend**: Spring Boot + Vaadin (Java 17)
-- **Database**: PostgreSQL (local instance)
-- **Frontend**: Vaadin Flow with dark theme
-- **AI Agents**: Mock data mode (Python agents disabled for simplicity)
+This Replit deployment now runs the **full production architecture** with:
+
+- **Spring Boot Backend**: Java 17 + Vaadin Flow (port 8081 → 8080)
+- **Solace PubSub+ Event Broker**: Docker container (ports 55555, 8080, 1883, 8008)
+- **SAM Agent Mesh**: Native installation with event mesh gateway
+- **FastMCP Servers**: 5 Python servers (ports 8001-8005)
+- **PostgreSQL Database**: Native local instance (port 5432)
+- **Real AI Agent Processing**: All agents working with live message broker
 
 ### What's Enabled
 
-✅ **Working Features**:
-- Reality Score™ Gauge with animations
-- Dashboard with Wall of Shame
-- Analysis interface
-- Mock bot detection results
-- Dark theme UI
-- WebSocket push notifications
-- Database with demo data
+✅ **Production Features**:
+- **Real Agent Processing**: All 5 AI agents connected via SAM
+- **Solace Event Broker**: Full message routing and guaranteed delivery
+- **Reality Score™ Calculation**: Live agent result aggregation
+- **WebSocket Push**: Real-time updates from agent processing
+- **Event Mesh Gateway**: SAM routing analysis requests to agents
+- **FastMCP Protocol**: Standardized tool integration
+- **Parallel Processing**: < 3 second analysis with real agents
 
-❌ **Disabled for Demo**:
-- External API connections (Reddit, Twitter, etc.)
-- Solace message broker (uses mock data instead)
-- Real AI agent processing
-- Stripe payment integration
+✅ **UI Features**:
+- Reality Score™ Gauge with live data updates
+- Dashboard with real agent results
+- Wall of Shame with live bot detection
+- Analysis interface with production backend
+- Dark theme UI with WebSocket notifications
+
+⚠️ **Simplified for Replit**:
+- External API connections may be limited
+- LLM API key required for full SAM functionality
+- Memory optimized for ~2GB constraint
 
 ## 🔧 Configuration Files
 

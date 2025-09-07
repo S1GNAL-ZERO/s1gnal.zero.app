@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# S1GNAL.ZERO Replit Startup Script
+# S1GNAL.ZERO Replit Startup Script - Hybrid SAM + Solace Docker Architecture
 # AGI Ventures Canada Hackathon 3.0 (September 6-7, 2025)
 
 set -e  # Exit on any error
 
 echo "==================================================================="
-echo "   🚀 S1GNAL.ZERO - Starting on Replit"
+echo "   🚀 S1GNAL.ZERO - Hybrid SAM + Solace Docker Setup"
 echo "   AGI Ventures Canada Hackathon 3.0 | September 6-7, 2025"
 echo "==================================================================="
 
@@ -43,18 +43,64 @@ check_service() {
     fi
 }
 
-# Set up environment variables for Replit
+# Function to wait for service to be ready
+wait_for_service() {
+    local service_name=$1
+    local port=$2
+    local max_attempts=30
+    local attempt=1
+    
+    log "Waiting for $service_name to be ready on port $port..."
+    while [ $attempt -le $max_attempts ]; do
+        if nc -z localhost $port 2>/dev/null; then
+            log "$service_name is ready!"
+            return 0
+        fi
+        echo -n "."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    error "$service_name failed to start after $((max_attempts * 2)) seconds"
+    return 1
+}
+
+# Set up environment variables for Replit hybrid setup
 export JAVA_HOME="${JAVA_HOME:-/nix/store/*/lib/openjdk}"
 export MAVEN_OPTS="-Xmx1024m -Xms512m"
 export SPRING_PROFILES_ACTIVE="replit"
 export SERVER_PORT="8080"
-export DEMO_MODE="true"
-export USE_MOCK_DATA="true"
+
+# Production mode with real agents
+export DEMO_MODE="false"
+export USE_MOCK_DATA="false"
 export HACKATHON_MODE="true"
 
-log "Environment setup complete"
+# Solace connection (Docker container)
+export SOLACE_HOST="tcp://localhost:55555"
+export SOLACE_VPN="default"
+export SOLACE_USERNAME="admin"
+export SOLACE_PASSWORD="admin"
+export SOLACE_CLIENT_NAME="signalzero-replit"
+
+# SAM Agent Mesh configuration
+export SOLACE_BROKER_URL="ws://localhost:8008"
+export SOLACE_BROKER_VPN="default"
+export SOLACE_BROKER_USERNAME="default"
+export SOLACE_BROKER_PASSWORD="default"
+export NAMESPACE="signalzero/"
+
+# LLM Configuration (required for SAM)
+export LLM_SERVICE_ENDPOINT="${LLM_SERVICE_ENDPOINT:-https://api.anthropic.com}"
+export LLM_SERVICE_API_KEY="${LLM_SERVICE_API_KEY:-your_key_here}"
+export LLM_SERVICE_PLANNING_MODEL_NAME="anthropic/claude-3-haiku-20240307"
+export LLM_SERVICE_GENERAL_MODEL_NAME="anthropic/claude-3-haiku-20240307"
+export LLM_SERVICE_ANALYSIS_MODEL_NAME="anthropic/claude-3-haiku-20240307"
+
+log "Environment setup complete for hybrid architecture"
 log "JAVA_HOME: $JAVA_HOME"
 log "Spring Profile: $SPRING_PROFILES_ACTIVE"
+log "Solace Host: $SOLACE_HOST"
 
 # Initialize PostgreSQL if not already done
 log "Setting up PostgreSQL database..."
@@ -108,12 +154,102 @@ if [ -f "database/01_create_schema.sql" ]; then
     psql -d main -f database/04_seed_demo_data.sql || warn "Data seeding had warnings"
 fi
 
-# Install Python dependencies for agents
-log "Setting up Python environment for AI agents..."
+# Start Docker daemon if not running
+log "Starting Docker daemon..."
+if ! pgrep dockerd > /dev/null 2>&1; then
+    dockerd > /dev/null 2>&1 &
+    sleep 5
+    log "Docker daemon started"
+fi
+
+# Start Solace PubSub+ Event Broker in Docker
+log "Starting Solace PubSub+ Event Broker..."
+if ! docker ps | grep -q "solace"; then
+    log "Starting Solace container..."
+    docker run -d -p 55555:55555 -p 8080:8080 -p 1883:1883 -p 8008:8008 \
+        --shm-size=1g --env username_admin_globalaccesslevel=admin \
+        --env username_admin_password=admin --name=solace \
+        solace/solace-pubsub-standard:latest || warn "Solace container may have startup issues"
+    
+    # Wait for Solace to be ready
+    wait_for_service "Solace SMF" 55555
+    wait_for_service "Solace Web Messaging" 8008
+    log "Solace PubSub+ Event Broker is ready!"
+else
+    log "Solace container already running"
+fi
+
+# Install Python dependencies for agents and SAM
+log "Setting up Python environment for AI agents and SAM..."
 if [ -f "agents/requirements.txt" ]; then
-    log "Installing Python dependencies..."
+    log "Installing Python agent dependencies..."
     pip install -r agents/requirements.txt --user --quiet || warn "Some Python packages may not have installed"
 fi
+
+# Install SAM Agent Mesh
+log "Installing Solace Agent Mesh (SAM)..."
+pip install solace-agent-mesh --user --quiet || warn "SAM installation may have had issues"
+
+# Install FastMCP dependencies
+log "Installing FastMCP dependencies..."
+pip install fastmcp --user --quiet || warn "FastMCP installation may have had issues"
+
+# Start FastMCP servers
+log "Starting FastMCP servers..."
+cd agents/mcp_servers
+
+# Start all MCP servers in background
+log "Starting Bot Detection MCP Server (port 8001)..."
+python bot_detection_server.py > ../logs/bot_detection.log 2>&1 &
+BOT_DETECTION_PID=$!
+
+log "Starting Trend Analysis MCP Server (port 8002)..."  
+python trend_analysis_server.py > ../logs/trend_analysis.log 2>&1 &
+TREND_ANALYSIS_PID=$!
+
+log "Starting Review Validator MCP Server (port 8003)..."
+python review_validator_server.py > ../logs/review_validator.log 2>&1 &
+REVIEW_VALIDATOR_PID=$!
+
+log "Starting Paid Promotion MCP Server (port 8004)..."
+python paid_promotion_server.py > ../logs/paid_promotion.log 2>&1 &
+PAID_PROMOTION_PID=$!
+
+log "Starting Score Aggregator MCP Server (port 8005)..."
+python score_aggregator_server.py > ../logs/score_aggregator.log 2>&1 &
+SCORE_AGGREGATOR_PID=$!
+
+# Create log directory
+mkdir -p ../logs
+
+# Wait for FastMCP servers to be ready
+sleep 5
+wait_for_service "Bot Detection MCP" 8001
+wait_for_service "Trend Analysis MCP" 8002
+wait_for_service "Review Validator MCP" 8003
+wait_for_service "Paid Promotion MCP" 8004
+wait_for_service "Score Aggregator MCP" 8005
+
+log "All FastMCP servers are running!"
+
+# Start SAM Event Mesh Gateway
+log "Starting SAM Event Mesh Gateway..."
+cd ../../
+sam run configs/gateways/signalzero-event-mesh.yaml > sam_gateway.log 2>&1 &
+SAM_GATEWAY_PID=$!
+
+log "SAM Event Mesh Gateway started"
+
+# Create cleanup function
+cleanup() {
+    log "Shutting down services..."
+    kill $BOT_DETECTION_PID $TREND_ANALYSIS_PID $REVIEW_VALIDATOR_PID $PAID_PROMOTION_PID $SCORE_AGGREGATOR_PID $SAM_GATEWAY_PID 2>/dev/null || true
+    docker stop solace 2>/dev/null || true
+    docker rm solace 2>/dev/null || true
+}
+
+# Set up trap for cleanup on exit
+trap cleanup EXIT
 
 # Create Replit-specific application properties
 log "Creating Replit-specific configuration..."

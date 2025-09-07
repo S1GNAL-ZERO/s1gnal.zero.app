@@ -6,11 +6,16 @@
     # Maven for building Java project
     pkgs.maven
     
-    # Python for AI agents
+    # Python for AI agents and SAM
     pkgs.python311
     pkgs.python311Packages.pip
     pkgs.python311Packages.setuptools
     pkgs.python311Packages.wheel
+    pkgs.python311Packages.virtualenv
+    
+    # Docker for Solace event broker
+    pkgs.docker
+    pkgs.docker-compose
     
     # PostgreSQL for database
     pkgs.postgresql
@@ -25,11 +30,13 @@
     # Process management
     pkgs.procps
     pkgs.killall
+    pkgs.ps
     
     # Network utilities
     pkgs.curl
     pkgs.wget
     pkgs.netcat
+    pkgs.lsof
     
     # Text processing
     pkgs.jq
@@ -39,6 +46,8 @@
     pkgs.findutils
     pkgs.gnused
     pkgs.gawk
+    pkgs.bash
+    pkgs.coreutils
     
     # SSL/TLS support
     pkgs.openssl

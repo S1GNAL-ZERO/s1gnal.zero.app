@@ -40,17 +40,32 @@ DATABASE_URL = "jdbc:postgresql://localhost:5432/main"
 DATABASE_USERNAME = "main"
 DATABASE_PASSWORD = ""
 
-# Demo Mode Configuration
-DEMO_MODE = "true"
-USE_MOCK_DATA = "true"
+# Hybrid Architecture Configuration
+DEMO_MODE = "false"
+USE_MOCK_DATA = "false"
 HACKATHON_MODE = "true"
 AUTO_SEED_DATA = "true"
 
-# Disable external services for Replit demo
+# Solace PubSub+ Configuration (Docker Container)
 SOLACE_HOST = "tcp://localhost:55555"
 SOLACE_VPN = "default"
 SOLACE_USERNAME = "admin"
 SOLACE_PASSWORD = "admin"
+SOLACE_CLIENT_NAME = "signalzero-replit"
+
+# SAM Agent Mesh Configuration
+SOLACE_BROKER_URL = "ws://localhost:8008"
+SOLACE_BROKER_VPN = "default"
+SOLACE_BROKER_USERNAME = "default"
+SOLACE_BROKER_PASSWORD = "default"
+NAMESPACE = "signalzero/"
+
+# LLM Configuration (Required for SAM)
+LLM_SERVICE_ENDPOINT = "https://api.anthropic.com"
+LLM_SERVICE_API_KEY = "your_anthropic_api_key_here"
+LLM_SERVICE_PLANNING_MODEL_NAME = "anthropic/claude-3-haiku-20240307"
+LLM_SERVICE_GENERAL_MODEL_NAME = "anthropic/claude-3-haiku-20240307"
+LLM_SERVICE_ANALYSIS_MODEL_NAME = "anthropic/claude-3-haiku-20240307"
 
 # Security
 JWT_SECRET = "replit-s1gn4lz3r0-demo-secret-key"
