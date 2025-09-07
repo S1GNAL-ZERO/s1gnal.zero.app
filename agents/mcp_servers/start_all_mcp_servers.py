@@ -83,9 +83,15 @@ class MCPServerOrchestrator:
                         return False
                     
                     # Start the server process
+                    # Need to run from agents directory for imports to work
+                    agents_dir = script_dir.parent
+                    
+                    # Set up environment to inherit current Python environment
+                    env = os.environ.copy()
+                    
                     cmd = [
                         sys.executable,
-                        str(script_path)
+                        str(script_path.relative_to(agents_dir))
                     ]
                     
                     logger.info(f"🔄 Starting {config['name']} on port {config['port']}")
@@ -95,7 +101,9 @@ class MCPServerOrchestrator:
                         stderr=subprocess.PIPE,
                         text=True,
                         bufsize=1,
-                        universal_newlines=True
+                        universal_newlines=True,
+                        cwd=str(agents_dir),  # Run from agents directory
+                        env=env  # Inherit environment
                     )
                     
                     self.processes.append({
