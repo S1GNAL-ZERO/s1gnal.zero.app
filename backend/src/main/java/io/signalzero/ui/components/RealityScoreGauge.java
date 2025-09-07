@@ -76,7 +76,7 @@ public class RealityScoreGauge extends Div {
         svgContainer.getStyle().set("width", "100%");
         svgContainer.getStyle().set("height", "100%");
         
-        // Create SVG markup as HTML string (Vaadin Flow approach)
+        // Create SVG markup with background circle, progress circle, and center dot
         String svgContent = String.format("""
             <svg width="%d" height="%d" class="gauge-svg" style="overflow: visible;">
                 <!-- Background circle -->
@@ -88,15 +88,14 @@ public class RealityScoreGauge extends Div {
                         
                 <!-- Progress circle -->
                 <circle cx="%d" cy="%d" r="%d" 
-                        class="gauge-progress" 
-                        stroke="#667eea" 
+                        id="progress-circle"
+                        stroke="#f59e0b" 
                         stroke-width="%d" 
                         fill="none"
+                        stroke-dasharray="%.1f"
+                        stroke-dashoffset="%.1f"
                         stroke-linecap="round"
-                        stroke-dasharray="%.2f"
-                        stroke-dashoffset="%.2f"
-                        transform="rotate(-90 %d %d)"
-                        style="transition: stroke-dashoffset 1s ease-in-out, stroke 0.5s ease;"/>
+                        transform="rotate(-90 %d %d)"/>
                         
                 <!-- Center dot -->
                 <circle cx="%d" cy="%d" r="4" 
@@ -106,7 +105,7 @@ public class RealityScoreGauge extends Div {
             GAUGE_SIZE, GAUGE_SIZE,
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
-            CIRCUMFERENCE, CIRCUMFERENCE, // Initial: no progress (fully hidden)
+            CIRCUMFERENCE, CIRCUMFERENCE, // Initial state: fully hidden
             GAUGE_SIZE/2, GAUGE_SIZE/2,
             GAUGE_SIZE/2, GAUGE_SIZE/2
         );
@@ -156,21 +155,6 @@ public class RealityScoreGauge extends Div {
     private void setInitialScore() {
         scoreText.setText("--");
         botPercentageText.setText("Ready to analyze");
-        
-        // Set initial gauge to show a small progress to make it visible
-        getElement().executeJs("""
-            setTimeout(() => {
-                const circle = $0.querySelector('.gauge-progress');
-                if (circle) {
-                    circle.style.strokeDasharray = $1;
-                    circle.style.strokeDashoffset = $2;
-                    circle.style.stroke = '#f59e0b';
-                    circle.style.opacity = '0.5';
-                }
-            }, 100);
-            """, getElement(), CIRCUMFERENCE, CIRCUMFERENCE * 0.95); // Show 5% to make it visible
-        
-        updateGaugeColor(ManipulationLevel.YELLOW);
     }
 
     /**
@@ -190,17 +174,13 @@ public class RealityScoreGauge extends Div {
         scoreText.setText(currentScore + "%");
         botPercentageText.setText(currentBotPercentage + "% bots detected");
         
-        // Update gauge visual
-        updateGaugeProgress(currentScore);
+        // Update gauge color and progress arc
         updateGaugeColor(level);
-        
-        // Add completion animation
-        addClassName("gauge-complete");
-        getElement().executeJs("setTimeout(() => { $0.classList.remove('gauge-complete'); }, 1000)", getElement());
+        updateProgressArc(currentScore, level);
     }
 
     /**
-     * Set processing state with loading animation.
+     * Set processing state without animations.
      */
     public void setProcessing(boolean processing) {
         this.isProcessing = processing;
@@ -209,26 +189,7 @@ public class RealityScoreGauge extends Div {
             scoreText.setText("••••");
             botPercentageText.setText("AI agents analyzing...");
             labelText.setText("Processing");
-            
-            // Add loading animation to the progress circle
-            getElement().executeJs("""
-                const circle = $0.querySelector('.gauge-progress');
-                if (circle) {
-                    circle.style.animation = 'spin 2s linear infinite';
-                    circle.style.strokeDasharray = $1;
-                    circle.style.strokeDashoffset = $2;
-                }
-                """, getElement(), CIRCUMFERENCE * 0.25, CIRCUMFERENCE * 0.75);
-            
         } else {
-            // Remove loading animation
-            getElement().executeJs("""
-                const circle = $0.querySelector('.gauge-progress');
-                if (circle) {
-                    circle.style.animation = '';
-                }
-                """, getElement());
-            
             if (currentScore > 0) {
                 scoreText.setText(currentScore + "%");
                 botPercentageText.setText(currentBotPercentage + "% bots detected");
@@ -239,73 +200,64 @@ public class RealityScoreGauge extends Div {
         }
     }
 
-    /**
-     * Update the gauge progress arc based on score.
-     */
-    private void updateGaugeProgress(int score) {
-        double progressPercentage = score / 100.0;
-        double dashOffset = CIRCUMFERENCE * (1 - progressPercentage);
-        
-        // Update the SVG circle stroke-dashoffset via JavaScript with proper parameter passing
-        getElement().executeJs("""
-            console.log('Updating gauge progress to ' + $1 + '% (dashOffset: ' + $2 + ')');
-            const circle = $0.querySelector('.gauge-progress');
-            console.log('Found circle element:', circle);
-            if (circle) {
-                circle.style.strokeDasharray = $3;
-                circle.style.strokeDashoffset = $2;
-                console.log('Updated circle style - dasharray:', circle.style.strokeDasharray, 'dashoffset:', circle.style.strokeDashoffset);
-                console.log('Progress percentage:', $1 + '%', 'CIRCUMFERENCE:', $3, 'dashOffset:', $2);
-            } else {
-                console.error('Could not find .gauge-progress element in:', $0);
-                const allCircles = $0.querySelectorAll('circle');
-                console.log('All circles found:', allCircles);
-            }
-            """, getElement(), score, dashOffset, CIRCUMFERENCE);
-    }
 
     /**
      * Update gauge color based on manipulation level.
      */
     private void updateGaugeColor(ManipulationLevel level) {
-        String strokeColor;
-        String glowColor;
-        
         switch (level) {
             case GREEN:
-                strokeColor = "#10b981"; // --ok color
-                glowColor = "rgba(16, 185, 129, 0.4)";
                 removeClassName("gauge-yellow");
                 removeClassName("gauge-red");
                 addClassName("gauge-green");
                 break;
             case YELLOW:
-                strokeColor = "#f59e0b"; // --warn color
-                glowColor = "rgba(245, 158, 11, 0.4)";
                 removeClassName("gauge-green");
                 removeClassName("gauge-red");
                 addClassName("gauge-yellow");
                 break;
             case RED:
             default:
-                strokeColor = "#ef4444"; // --bad color
-                glowColor = "rgba(239, 68, 68, 0.4)";
                 removeClassName("gauge-green");
                 removeClassName("gauge-yellow");
                 addClassName("gauge-red");
                 break;
         }
+    }
+
+    /**
+     * Update the progress arc to show the current score.
+     */
+    private void updateProgressArc(int score, ManipulationLevel level) {
+        // Calculate the stroke-dashoffset based on the score percentage
+        double progress = score / 100.0;
+        double offset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
         
-        // Update the SVG circle stroke color via JavaScript with actual color values
-        getElement().executeJs("""
-            const circle = $0.querySelector('.gauge-progress');
-            if (circle) {
-                console.log('Updating gauge color to: ' + $1);
-                circle.style.stroke = $1;
-                circle.style.filter = 'drop-shadow(0 0 8px ' + $2 + ')';
-                circle.style.opacity = '1';
+        // Determine color based on manipulation level
+        String strokeColor;
+        switch (level) {
+            case GREEN:
+                strokeColor = "#10b981"; // Green
+                break;
+            case YELLOW:
+                strokeColor = "#f59e0b"; // Yellow
+                break;
+            case RED:
+            default:
+                strokeColor = "#ef4444"; // Red
+                break;
+        }
+        
+        // Use JavaScript to update the SVG progress circle
+        String jsCommand = String.format("""
+            const progressCircle = this.querySelector('#progress-circle');
+            if (progressCircle) {
+                progressCircle.setAttribute('stroke-dashoffset', '%.1f');
+                progressCircle.setAttribute('stroke', '%s');
             }
-            """, getElement(), strokeColor, glowColor);
+            """, offset, strokeColor);
+            
+        getElement().executeJs(jsCommand);
     }
 
     /**
@@ -318,7 +270,6 @@ public class RealityScoreGauge extends Div {
         isProcessing = false;
         
         setInitialScore();
-        updateGaugeProgress(0);
     }
 
     // Getters for current state

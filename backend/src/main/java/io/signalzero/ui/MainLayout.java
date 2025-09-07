@@ -11,6 +11,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.BeforeEnterEvent;
 
 /**
  * S1GNAL.ZERO - Main Layout
@@ -32,7 +34,10 @@ import com.vaadin.flow.router.RouterLink;
  * 
  * Reference: DETAILED_DESIGN.md Section 11 - Vaadin UI Components
  */
-public class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout implements BeforeEnterObserver {
+
+    private Div dashboardDiv;
+    private Div analyzeDiv;
 
     /**
      * Initialize the main layout with header and drawer components.
@@ -101,10 +106,9 @@ public class MainLayout extends AppLayout {
         logoBadge.getStyle().set("width", "40px");
         logoBadge.getStyle().set("height", "40px");
         logoBadge.getStyle().set("border-radius", "12px");
-        logoBadge.getStyle().set("background", "var(--accent)");
+        logoBadge.getStyle().set("background", "transparent");
         logoBadge.getStyle().set("display", "grid");
         logoBadge.getStyle().set("place-items", "center");
-        logoBadge.getStyle().set("box-shadow", "0 10px 25px rgba(102,126,234,.35)");
         
         // Logo text
         VerticalLayout logoText = new VerticalLayout();
@@ -210,13 +214,13 @@ public class MainLayout extends AppLayout {
         
         // Dashboard link
         RouterLink dashboardLink = new RouterLink("", DashboardView.class);
-        Div dashboardDiv = createNavLink("📊", "Dashboard", isCurrentRoute(""));
+        dashboardDiv = createNavLink("📊", "Dashboard", false);
         dashboardLink.add(dashboardDiv);
         dashboardLink.getStyle().set("text-decoration", "none");
         
         // Analyze link
         RouterLink analyzeLink = new RouterLink("analyze", AnalysisView.class);
-        Div analyzeDiv = createNavLink("🔍", "Analyze", isCurrentRoute("analyze"));
+        analyzeDiv = createNavLink("🔍", "Analyze", false);
         analyzeLink.add(analyzeDiv);
         analyzeLink.getStyle().set("text-decoration", "none");
         
@@ -240,7 +244,7 @@ public class MainLayout extends AppLayout {
     }
     
     /**
-     * Create a navigation link component.
+     * Create a navigation link component with hover effects.
      */
     private Div createNavLink(String icon, String label, boolean isActive) {
         Div link = new Div();
@@ -252,14 +256,28 @@ public class MainLayout extends AppLayout {
         link.getStyle().set("border-radius", "12px");
         link.getStyle().set("cursor", "pointer");
         link.getStyle().set("text-decoration", "none");
+        link.getStyle().set("transition", "all 0.2s ease");
+        
+        // Add hover effects via JavaScript
+        link.getElement().executeJs("""
+            this.addEventListener('mouseenter', () => {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'rgba(102,126,234,.08)';
+                    this.style.color = '#e8ecff';
+                }
+            });
+            this.addEventListener('mouseleave', () => {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'transparent';
+                    this.style.color = '#a6b0d8';
+                }
+            });
+            """);
         
         if (isActive) {
-            link.addClassName("active");
-            link.getStyle().set("background", "linear-gradient(135deg, rgba(102,126,234,.18), rgba(118,75,162,.18))");
-            link.getStyle().set("color", "#fff");
-            link.getStyle().set("border", "1px solid #2b376f");
+            setActiveNavLink(link);
         } else {
-            link.getStyle().set("color", "var(--muted)");
+            setInactiveNavLink(link);
         }
         
         Span iconSpan = new Span(icon);
@@ -271,14 +289,55 @@ public class MainLayout extends AppLayout {
     }
     
     /**
-     * Check if current route matches the given route.
+     * Set navigation link as active.
      */
-    private boolean isCurrentRoute(String route) {
-        String currentRoute = UI.getCurrent().getInternals().getActiveViewLocation().getPath();
-        if (route.isEmpty()) {
-            return currentRoute.isEmpty() || currentRoute.equals("/");
+    private void setActiveNavLink(Div link) {
+        link.addClassName("active");
+        link.getStyle().set("background", "linear-gradient(135deg, rgba(102,126,234,.18), rgba(118,75,162,.18))");
+        link.getStyle().set("color", "#fff");
+        link.getStyle().set("border", "1px solid #2b376f");
+    }
+    
+    /**
+     * Set navigation link as inactive.
+     */
+    private void setInactiveNavLink(Div link) {
+        link.removeClassName("active");
+        link.getStyle().set("background", "transparent");
+        link.getStyle().set("color", "var(--muted)");
+        link.getStyle().set("border", "1px solid transparent");
+    }
+    
+    /**
+     * Update navigation state based on current route.
+     */
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        updateNavigation(event.getLocation().getPath());
+    }
+    
+    /**
+     * Update navigation active states based on current path.
+     */
+    private void updateNavigation(String currentPath) {
+        // Reset all nav links to inactive
+        if (dashboardDiv != null) {
+            setInactiveNavLink(dashboardDiv);
         }
-        return currentRoute.equals("/" + route);
+        if (analyzeDiv != null) {
+            setInactiveNavLink(analyzeDiv);
+        }
+        
+        // Set active based on current path
+        if (currentPath.isEmpty() || currentPath.equals("/")) {
+            if (dashboardDiv != null) {
+                setActiveNavLink(dashboardDiv);
+            }
+        } else if (currentPath.equals("/analyze")) {
+            if (analyzeDiv != null) {
+                setActiveNavLink(analyzeDiv);
+            }
+        }
     }
     
     /**

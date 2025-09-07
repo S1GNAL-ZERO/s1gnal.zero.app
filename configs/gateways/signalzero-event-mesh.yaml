@@ -45,10 +45,10 @@ apps:
           subscriptions:
             - topic: "signalzero/analysis/request/>"
               qos: 1
-          input_expression: "template:Analyze the following content for manipulation detection: {{json://input.payload:content}}. Analysis ID: {{text://input.payload:analysisId}}, User ID: {{text://input.payload:userId}}, Data Source: {{text://input.payload:dataSource}}. Return comprehensive analysis results with manipulation scores."
+          input_expression: "template:Analyze query: {{text://input.payload:query}}. Analysis ID: {{text://input.payload:analysisId}}, User ID: {{text://input.payload:userId}}. Return comprehensive Reality Score analysis."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "OrchestratorAgent"
+          target_agent_name: "BotDetectionMCPAgent"
           on_success: "analysis_response_handler"
           on_error: "error_response_handler"
           user_identity_expression: "input.payload:userId"
@@ -62,10 +62,10 @@ apps:
           subscriptions:
             - topic: "signalzero/agent/bot-detector/request"
               qos: 1
-          input_expression: "template:Analyze the following content for bot-like behavior patterns: {{json://input.payload:content}}. Analysis ID: {{text://input.payload:analysisId}}. Focus on automated patterns, repetitive behavior, and artificial engagement markers."
+          input_expression: "template:Analyze query: {{text://input.payload:query}} for bot activity. Analysis ID: {{text://input.payload:analysisId}}. Focus on automated patterns and bot percentage."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "BotDetectionAgent"
+          target_agent_name: "BotDetectionMCPAgent"
           on_success: "bot_detection_response_handler"
           on_error: "error_response_handler"
           forward_context:
@@ -77,10 +77,10 @@ apps:
           subscriptions:
             - topic: "signalzero/agent/trend-analyzer/request"
               qos: 1
-          input_expression: "template:Analyze trending patterns in the following content: {{json://input.payload:content}}. Analysis ID: {{text://input.payload:analysisId}}. Identify viral mechanics, artificial amplification, and trending anomalies."
+          input_expression: "template:Analyze trending patterns for query: {{text://input.payload:query}}. Analysis ID: {{text://input.payload:analysisId}}. Identify viral mechanics and trend authenticity."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "TrendAnalysisAgent"
+          target_agent_name: "TrendAnalysisMCPAgent"
           on_success: "trend_analysis_response_handler"
           on_error: "error_response_handler"
           forward_context:
@@ -92,10 +92,10 @@ apps:
           subscriptions:
             - topic: "signalzero/agent/review-validator/request"
               qos: 1
-          input_expression: "template:Validate the authenticity of the following review content: {{json://input.payload:content}}. Analysis ID: {{text://input.payload:analysisId}}. Check for fake reviews, paid promotions, and authenticity markers."
+          input_expression: "template:Validate review authenticity for query: {{text://input.payload:query}}. Analysis ID: {{text://input.payload:analysisId}}. Check for fake reviews and authentic engagement."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "ReviewValidatorAgent"
+          target_agent_name: "ReviewValidatorMCPAgent"
           on_success: "review_validation_response_handler"
           on_error: "error_response_handler"
           forward_context:
@@ -107,10 +107,10 @@ apps:
           subscriptions:
             - topic: "signalzero/agent/promotion-detector/request"
               qos: 1
-          input_expression: "template:Analyze the following content for paid promotion indicators: {{json://input.payload:content}}. Analysis ID: {{text://input.payload:analysisId}}. Look for sponsored content, affiliate links, and promotional language patterns."
+          input_expression: "template:Detect paid promotions for query: {{text://input.payload:query}}. Analysis ID: {{text://input.payload:analysisId}}. Look for sponsored content and promotional indicators."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "PromotionDetectorAgent"
+          target_agent_name: "PaidPromotionMCPAgent"
           on_success: "promotion_detection_response_handler"
           on_error: "error_response_handler"
           forward_context:
@@ -122,10 +122,10 @@ apps:
           subscriptions:
             - topic: "signalzero/agent/score-aggregator/request"
               qos: 1
-          input_expression: "template:Aggregate the following analysis results into a final Reality Score: {{json://input.payload}}. Analysis ID: {{text://input.payload:analysisId}}. Combine all agent results and calculate final manipulation score."
+          input_expression: "template:Aggregate final Reality Score for query: {{text://input.payload:query}}. Analysis ID: {{text://input.payload:analysisId}}. Combine all agent results."
           payload_encoding: "utf-8"
           payload_format: "json"
-          target_agent_name: "ScoreAggregatorAgent"
+          target_agent_name: "ScoreAggregatorMCPAgent"
           on_success: "score_aggregation_response_handler"
           on_error: "error_response_handler"
           forward_context:

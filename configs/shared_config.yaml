@@ -13,26 +13,35 @@ shared_config:
     planning: &planning_model
       # This dictionary structure tells ADK to use the LiteLlm wrapper.
       # 'model' uses the specific model identifier your endpoint expects.
-      model: ${LLM_SERVICE_PLANNING_MODEL_NAME} # Use env var for model name
+      model: claude-3-haiku-20240307 # Direct model name for LiteLLM
       # 'api_base' tells LiteLLM where to send the request.
       api_base: ${LLM_SERVICE_ENDPOINT} # Use env var for endpoint URL
       # 'api_key' provides authentication.
       api_key: ${LLM_SERVICE_API_KEY} # Use env var for API key
+      # Add timeout settings to prevent hanging
+      timeout: 30
+      max_retries: 2
+      # Lower temperature for more deterministic planning
+      temperature: 0.1
+      # Set a reasonable max token limit for planning
+      max_tokens: 4096
       # Enable parallel tool calls for planning model
-      parallel_tool_calls: true 
-
-      # max_tokens: ${MAX_TOKENS, 16000} # Set a reasonable max token limit for planning
-      # temperature: 0.1 # Lower temperature for more deterministic planning
+      parallel_tool_calls: true
       
 
     general: &general_model
       # This dictionary structure tells ADK to use the LiteLlm wrapper.
       # 'model' uses the specific model identifier your endpoint expects.
-      model: ${LLM_SERVICE_GENERAL_MODEL_NAME} # Use env var for model name
+      model: claude-3-haiku-20240307 # Direct model name for LiteLLM
       # 'api_base' tells LiteLLM where to send the request.
       api_base: ${LLM_SERVICE_ENDPOINT} # Use env var for endpoint URL
       # 'api_key' provides authentication.
       api_key: ${LLM_SERVICE_API_KEY} # Use env var for API key
+      # Add timeout settings to prevent hanging
+      timeout: 30
+      max_retries: 2
+      # Lower temperature for more consistent responses
+      temperature: 0.7
 
     image_gen: &image_generation_model
       # This dictionary structure tells ADK to use the LiteLlm wrapper.
@@ -55,11 +64,16 @@ shared_config:
     analysis: &analysis_model
       # This dictionary structure tells ADK to use the LiteLlm wrapper.
       # 'model' uses the specific model identifier your endpoint expects.
-      model: ${LLM_SERVICE_ANALYSIS_MODEL_NAME, ${LLM_SERVICE_GENERAL_MODEL_NAME}} # Use env var for model name, fallback to general
+      model: claude-3-haiku-20240307 # Direct model name for LiteLLM
       # 'api_base' tells LiteLLM where to send the request.
       api_base: ${LLM_SERVICE_ENDPOINT} # Use env var for endpoint URL
       # 'api_key' provides authentication.
       api_key: ${LLM_SERVICE_API_KEY} # Use env var for API key
+      # Add timeout settings to prevent hanging
+      timeout: 30
+      max_retries: 2
+      # Lower temperature for analysis consistency
+      temperature: 0.3
       # Enable parallel tool calls for analysis tasks
       parallel_tool_calls: true
 
