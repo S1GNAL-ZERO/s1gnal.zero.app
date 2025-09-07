@@ -150,22 +150,22 @@ class BaseAgent(ABC):
     def _get_request_topic(self) -> str:
         """Get the request topic for this agent"""
         topic_map = {
-            'bot-detector': self.config.BOT_DETECTOR_REQUEST_TOPIC,
-            'trend-analyzer': self.config.TREND_ANALYZER_REQUEST_TOPIC,
-            'review-validator': self.config.REVIEW_VALIDATOR_REQUEST_TOPIC,
-            'paid-promotion': self.config.PAID_PROMOTION_REQUEST_TOPIC,
-            'score-aggregator': self.config.SCORE_AGGREGATOR_REQUEST_TOPIC
+            'bot-detector': self.config.get_topic('BOT_DETECTOR_REQUEST'),
+            'trend-analyzer': self.config.get_topic('TREND_ANALYZER_REQUEST'),
+            'review-validator': self.config.get_topic('REVIEW_VALIDATOR_REQUEST'),
+            'paid-promotion': self.config.get_topic('PROMOTION_DETECTOR_REQUEST'),
+            'score-aggregator': self.config.get_topic('SCORE_AGGREGATOR_REQUEST')
         }
         return topic_map.get(self.agent_type, f"signalzero/agent/{self.agent_type}/request")
         
     def _get_response_topic(self) -> str:
         """Get the response topic for this agent"""
         topic_map = {
-            'bot-detector': self.config.BOT_DETECTOR_RESPONSE_TOPIC,
-            'trend-analyzer': self.config.TREND_ANALYZER_RESPONSE_TOPIC,
-            'review-validator': self.config.REVIEW_VALIDATOR_RESPONSE_TOPIC,
-            'paid-promotion': self.config.PAID_PROMOTION_RESPONSE_TOPIC,
-            'score-aggregator': self.config.SCORE_AGGREGATOR_RESPONSE_TOPIC
+            'bot-detector': self.config.get_topic('BOT_DETECTOR_RESPONSE'),
+            'trend-analyzer': self.config.get_topic('TREND_ANALYZER_RESPONSE'),
+            'review-validator': self.config.get_topic('REVIEW_VALIDATOR_RESPONSE'),
+            'paid-promotion': self.config.get_topic('PROMOTION_DETECTOR_RESPONSE'),
+            'score-aggregator': self.config.get_topic('SCORE_AGGREGATOR_RESPONSE')
         }
         return topic_map.get(self.agent_type, f"signalzero/agent/{self.agent_type}/response")
         

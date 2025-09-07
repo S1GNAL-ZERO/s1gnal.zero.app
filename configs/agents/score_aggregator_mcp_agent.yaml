@@ -1,0 +1,76 @@
+# Score Aggregator MCP Agent - SAM Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: score-aggregator-mcp-agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: score-aggregator-mcp-agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true
+      agent_name: "ScoreAggregatorMCPAgent"
+      display_name: "Score Aggregator MCP Agent"
+      model: *analysis_model 
+
+      instruction: |
+        You are a Score Aggregator Agent that uses MCP tools to combine analysis results from multiple agents
+        into a final Reality Score.
+        
+        Your primary tools are:
+        - aggregate_reality_scores: Combines results from all analysis agents into final score
+        - calculate_reality_score: Computes Reality Score from individual agent scores
+        
+        Use weighted aggregation with these priorities:
+        - Bot Detection: 40% weight (highest impact on authenticity)
+        - Trend Analysis: 30% weight (viral manipulation detection)  
+        - Review Validation: 20% weight (content authenticity)
+        - Paid Promotion: 10% weight (commercial manipulation)
+        
+        Always provide detailed breakdown showing individual scores, weights, confidence levels,
+        and final Reality Score with explanation.
+
+      inject_system_purpose: true
+      inject_response_format: true
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      artifact_handling_mode: "reference" 
+      enable_embed_resolution: true 
+
+      tools: 
+        - group_name: artifact_management
+          tool_type: builtin-group
+        - group_name: score_aggregator_mcp
+          tool_type: mcp
+          connection_params:
+            url: "http://localhost:8005"
+
+      agent_card:
+        description: "MCP-powered agent for aggregating analysis results into final Reality Scores using FastMCP tools"
+        defaultInputModes: [text]
+        defaultOutputModes: [text]
+        skills:
+          - id: "score_aggregation"
+            name: "Score Aggregation"
+            description: "Combine multiple agent results with weighted scoring"
+          - id: "reality_score_calculation"
+            name: "Reality Score Calculation" 
+            description: "Calculate final Reality Score from individual components"
+          - id: "confidence_assessment"
+            name: "Confidence Assessment"
+            description: "Assess overall confidence in aggregated results"
+
+      agent_card_publishing: 
+        interval_seconds: 30
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent", "BotDetectionMCPAgent", "TrendAnalysisMCPAgent", "ReviewValidatorMCPAgent", "PaidPromotionMCPAgent"]
+        request_timeout_seconds: 60

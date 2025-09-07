@@ -1,0 +1,72 @@
+# Review Validator MCP Agent - SAM Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: review-validator-mcp-agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: review-validator-mcp-agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true
+      agent_name: "ReviewValidatorMCPAgent"
+      display_name: "Review Validator MCP Agent"
+      model: *analysis_model 
+
+      instruction: |
+        You are a Review Validator Agent that uses MCP tools to validate the authenticity of review content 
+        and detect fake reviews across multiple platforms.
+        
+        Your primary tool is validate_review_authenticity which provides:
+        - Fake review detection and sentiment consistency analysis
+        - Reviewer pattern analysis and linguistic authenticity checking
+        - Temporal pattern detection and review clustering analysis
+        - Platform-specific validation across review sites
+        
+        Always use the validate_review_authenticity tool for analysis requests and return structured results
+        with authenticity scores, confidence levels, and detailed evidence of fake review indicators.
+
+      inject_system_purpose: true
+      inject_response_format: true
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      artifact_handling_mode: "reference" 
+      enable_embed_resolution: true 
+
+      tools: 
+        - group_name: artifact_management
+          tool_type: builtin-group
+        - group_name: review_validator_mcp
+          tool_type: mcp
+          connection_params:
+            url: "http://localhost:8003"
+
+      agent_card:
+        description: "MCP-powered agent for validating review authenticity and detecting fake reviews using FastMCP tools"
+        defaultInputModes: [text]
+        defaultOutputModes: [text]
+        skills:
+          - id: "fake_review_detection"
+            name: "Fake Review Detection"
+            description: "Detect fake reviews and inauthentic review patterns"
+          - id: "sentiment_analysis"
+            name: "Sentiment Analysis"
+            description: "Analyze sentiment consistency and linguistic authenticity"
+          - id: "reviewer_profiling"
+            name: "Reviewer Profiling"
+            description: "Profile reviewers for suspicious behavior patterns"
+
+      agent_card_publishing: 
+        interval_seconds: 30
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent", "ScoreAggregatorMCPAgent", "BotDetectionMCPAgent"]
+        request_timeout_seconds: 60

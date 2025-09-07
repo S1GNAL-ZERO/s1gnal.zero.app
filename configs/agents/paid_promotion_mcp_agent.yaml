@@ -1,0 +1,72 @@
+# Paid Promotion MCP Agent - SAM Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: paid-promotion-mcp-agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: paid-promotion-mcp-agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true
+      agent_name: "PaidPromotionMCPAgent"
+      display_name: "Paid Promotion MCP Agent"
+      model: *analysis_model 
+
+      instruction: |
+        You are a Paid Promotion Detection Agent that uses MCP tools to analyze content for sponsored content,
+        paid partnerships, and undisclosed commercial relationships.
+        
+        Your primary tool is detect_paid_promotion which provides:
+        - Sponsored content detection and affiliate link analysis
+        - Disclosure compliance checking and brand partnership identification
+        - Promotional language pattern recognition
+        - Commercial relationship scoring with confidence levels
+        
+        Always use the detect_paid_promotion tool for analysis requests and return structured results
+        with promotion probability scores, confidence levels, and detailed evidence of commercial intent.
+
+      inject_system_purpose: true
+      inject_response_format: true
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      artifact_handling_mode: "reference" 
+      enable_embed_resolution: true 
+
+      tools: 
+        - group_name: artifact_management
+          tool_type: builtin-group
+        - group_name: paid_promotion_mcp
+          tool_type: mcp
+          connection_params:
+            url: "http://localhost:8004"
+
+      agent_card:
+        description: "MCP-powered agent for detecting paid promotions, sponsored content, and undisclosed commercial relationships using FastMCP tools"
+        defaultInputModes: [text]
+        defaultOutputModes: [text]
+        skills:
+          - id: "sponsored_content_detection"
+            name: "Sponsored Content Detection"
+            description: "Analyze content for sponsored posts and paid partnerships"
+          - id: "disclosure_compliance"
+            name: "Disclosure Compliance"
+            description: "Check for proper disclosure of commercial relationships"
+          - id: "commercial_intent_scoring"
+            name: "Commercial Intent Scoring"
+            description: "Calculate commercial intent scores with confidence levels"
+
+      agent_card_publishing: 
+        interval_seconds: 30
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent", "ScoreAggregatorMCPAgent"]
+        request_timeout_seconds: 60upeda

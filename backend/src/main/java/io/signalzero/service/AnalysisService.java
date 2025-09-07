@@ -274,8 +274,10 @@ public class AnalysisService {
             addToWallOfShame(analysis);
         }
         
-        // TODO: Publish completion event - method needs to be implemented in SolacePublisher
-        // solacePublisher.publishScoreUpdate(analysis.getId().toString(), realityScore.intValue(), botPercentage.intValue());
+        // Publish completion event to Solace
+        solacePublisher.publishScoreUpdate(analysis.getId().toString(), 
+                                         realityScore.intValue(), 
+                                         botPercentage.intValue());
         
         logger.info("Completed analysis ID: {} with Reality Score: {}%", analysis.getId(), realityScore.intValue());
     }
@@ -344,39 +346,61 @@ public class AnalysisService {
             Analysis analysis = createAnalysisEntity(query);
             analysis = analysisRepository.save(analysis);
             
+            // 🔥 PUBLISH ANALYSIS REQUEST TO SOLACE - This triggers the multi-agent pipeline
+            solacePublisher.publishAnalysisRequest("anonymous", 
+                                                  analysis.getId().toString(), 
+                                                  query, 
+                                                  "all");
+            
+            // Publish initial status update
+            solacePublisher.publishStatusUpdate(analysis.getId().toString(), 
+                                              "PROCESSING", 
+                                              "Analysis started for: " + query);
+            
             // Broadcast initial status
             AnalysisUpdateBroadcaster.broadcastStatusChange(analysis);
             
-            // Simulate processing with status updates
+            // Set processing status
             analysis.setStatus(AnalysisStatus.PROCESSING);
             analysis.setStartedAt(LocalDateTime.now());
             analysis = analysisRepository.save(analysis);
             AnalysisUpdateBroadcaster.broadcastStatusChange(analysis);
             
-            // Simulate realistic processing time
-            simulateAgentProcessing(analysis);
+            // 🔥 WAIT FOR AGENT RESPONSES - This is the key change!
+            Analysis completedAnalysis = waitForAgentResponses(analysis);
             
-            // Calculate results
-            calculateResults(analysis);
+            // If no agent responses, fall back to demo data
+            if (completedAnalysis.getStatus() != AnalysisStatus.COMPLETE) {
+                logger.info("⚠️ No agent responses received, using demo data for: {}", query);
+                calculateResults(completedAnalysis);
+                
+                completedAnalysis.setStatus(AnalysisStatus.COMPLETE);
+                completedAnalysis.setCompletedAt(LocalDateTime.now());
+                
+                Duration processingTime = Duration.between(completedAnalysis.getStartedAt(), completedAnalysis.getCompletedAt());
+                completedAnalysis.setProcessingTimeMs((int) processingTime.toMillis());
+                
+                completedAnalysis = analysisRepository.save(completedAnalysis);
+            }
             
-            // Complete analysis
-            analysis.setStatus(AnalysisStatus.COMPLETE);
-            analysis.setCompletedAt(LocalDateTime.now());
+            // 🔥 PUBLISH FINAL RESULTS TO SOLACE
+            solacePublisher.publishScoreUpdate(completedAnalysis.getId().toString(), 
+                                             completedAnalysis.getBotPercentage().intValue(),
+                                             completedAnalysis.getRealityScore().intValue());
             
-            Duration processingTime = Duration.between(analysis.getStartedAt(), analysis.getCompletedAt());
-            analysis.setProcessingTimeMs((int) processingTime.toMillis());
+            solacePublisher.publishStatusUpdate(completedAnalysis.getId().toString(), 
+                                              "COMPLETE", 
+                                              "Analysis complete with " + completedAnalysis.getRealityScore().intValue() + "% Reality Score");
             
-            // Save and broadcast completion
-            analysis = analysisRepository.save(analysis);
-            AnalysisUpdateBroadcaster.broadcastCompletion(analysis);
+            AnalysisUpdateBroadcaster.broadcastCompletion(completedAnalysis);
             
             // Add to Wall of Shame if needed
-            addToWallOfShameIfNeeded(analysis);
+            addToWallOfShameIfNeeded(completedAnalysis);
             
             logger.info("✅ Async analysis completed: '{}' - {}% Reality Score", 
-                       analysis.getQuery(), analysis.getRealityScore());
+                       completedAnalysis.getQuery(), completedAnalysis.getRealityScore());
             
-            return CompletableFuture.completedFuture(analysis);
+            return CompletableFuture.completedFuture(completedAnalysis);
             
         } catch (Exception e) {
             logger.error("❌ Async analysis failed for query: '{}'", query, e);
@@ -412,8 +436,11 @@ public class AnalysisService {
             
             wallOfShameRepository.save(wallEntry);
             
-            // TODO: Publish to Wall of Shame topic - method needs to be implemented in SolacePublisher
-            // solacePublisher.publishWallOfShameAddition(wallEntry.getId(), analysis.getQuery(), analysis.getBotPercentage());
+            // Publish to Wall of Shame topic
+            solacePublisher.publishWallOfShameAdd(analysis.getId().toString(), 
+                                                analysis.getQuery(),
+                                                analysis.getBotPercentage().intValue(), 
+                                                analysis.getRealityScore().intValue());
             
             logger.info("Added analysis {} to Wall of Shame with {}% bots", 
                        analysis.getId(), analysis.getBotPercentage().intValue());
@@ -493,6 +520,11 @@ public class AnalysisService {
     private Analysis createAnalysisEntity(String query) {
         // Create with default user (for demo/anonymous access)
         Analysis analysis = new Analysis();
+        
+        // Set default userId for anonymous analyses (find or create anonymous user)
+        User anonymousUser = getOrCreateAnonymousUser();
+        analysis.setUserId(anonymousUser.getId());
+        
         analysis.setQuery(query.trim());
         analysis.setQueryType("product"); // Default type
         analysis.setPlatform("all"); // Default platform
@@ -500,6 +532,25 @@ public class AnalysisService {
         analysis.setIsPublic(true); // Make public for demo
         analysis.setSolaceCorrelationId(UUID.randomUUID().toString());
         return analysis;
+    }
+    
+    /**
+     * Get or create anonymous user for demo analyses
+     */
+    private User getOrCreateAnonymousUser() {
+        Optional<User> existingUser = userRepository.findByEmail("anonymous@signalzero.ai");
+        
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+        
+        // Create anonymous user for demo
+        User anonymousUser = new User();
+        anonymousUser.setEmail("anonymous@signalzero.ai");
+        anonymousUser.setFullName("Anonymous User");
+        anonymousUser.setSubscriptionTier(SubscriptionTier.FREE);
+        
+        return userRepository.save(anonymousUser);
     }
     
     /**
@@ -597,6 +648,55 @@ public class AnalysisService {
             .findFirst()
             .map(AgentResult::getScore)
             .orElse(BigDecimal.valueOf(50)); // Default fallback
+    }
+    
+    /**
+     * Wait for agent responses from Solace with timeout
+     */
+    private Analysis waitForAgentResponses(Analysis analysis) {
+        logger.info("🕒 Waiting for agent responses for analysis: {}", analysis.getId());
+        
+        long startTime = System.currentTimeMillis();
+        long timeoutMs = analysisTimeoutSeconds * 1000L;
+        
+        while ((System.currentTimeMillis() - startTime) < timeoutMs) {
+            try {
+                // Check if analysis has been completed by agent responses
+                Optional<Analysis> updatedOpt = analysisRepository.findById(analysis.getId());
+                if (updatedOpt.isPresent()) {
+                    Analysis updated = updatedOpt.get();
+                    if (updated.getStatus() == AnalysisStatus.COMPLETE) {
+                        logger.info("✅ Analysis completed by agents: {}", analysis.getId());
+                        return updated;
+                    }
+                }
+                
+                // Check if we have received any agent results
+                long completedAgents = agentResultRepository.countCompletedAgentsByAnalysis(analysis.getId());
+                if (completedAgents >= 3) { // Minimum 3 agents required
+                    logger.info("📊 Found {} agent results, completing analysis: {}", completedAgents, analysis.getId());
+                    
+                    // Get updated analysis and complete it
+                    Analysis updated = analysisRepository.findById(analysis.getId()).orElse(analysis);
+                    completeAnalysis(updated);
+                    return analysisRepository.findById(analysis.getId()).orElse(updated);
+                }
+                
+                // Wait a bit before checking again
+                Thread.sleep(500);
+                
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("⚠️ Wait for agent responses interrupted for analysis: {}", analysis.getId());
+                break;
+            } catch (Exception e) {
+                logger.error("❌ Error while waiting for agent responses: {}", e.getMessage());
+                break;
+            }
+        }
+        
+        logger.warn("⏰ Timeout waiting for agent responses for analysis: {}", analysis.getId());
+        return analysis; // Return original analysis if timeout
     }
     
     /**

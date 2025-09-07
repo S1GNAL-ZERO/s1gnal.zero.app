@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  * Reference: DETAILED_DESIGN.md Section 8.2
  */
 @Service
-public class SolaceConsumer {
+public class SolaceConsumer implements XMLMessageListener {
     
     private static final Logger log = LoggerFactory.getLogger(SolaceConsumer.class);
     
@@ -38,61 +38,93 @@ public class SolaceConsumer {
         try {
             setupConsumers();
             isInitialized = true;
-            log.info("Solace Consumer initialized successfully");
+            log.info("✅ Solace Consumer initialized successfully with message listener");
         } catch (Exception e) {
-            log.error("Failed to initialize Solace Consumer", e);
+            log.error("❌ Failed to initialize Solace Consumer", e);
             throw new RuntimeException("Failed to initialize Solace Consumer", e);
         }
     }
     
     private void setupConsumers() throws JCSMPException {
-        // For hackathon MVP: Create a simple consumer for direct messages
-        // We'll implement a basic subscription mechanism
+        // Set up the message listener for direct messages
+        session.getMessageConsumer(this);
         
-        // Subscribe to all agent response topics
+        // Subscribe to all agent response topics and request topics for debugging
         subscribeToAgentTopics();
         
-        // Create a background consumer thread (simplified for hackathon)
-        startConsumerThread();
-        
-        log.info("Consumer direct topic subscriptions started successfully");
-    }
-    
-    private void startConsumerThread() {
-        // For hackathon: Simple consumer implementation
-        // In production, we'd use proper flow receivers
-        Thread consumerThread = new Thread(() -> {
-            log.info("Consumer thread started - ready to receive messages");
-            try {
-                // Keep thread alive for message processing
-                while (isInitialized && !Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(100); // Simple polling approach for hackathon
-                }
-            } catch (InterruptedException e) {
-                log.info("Consumer thread interrupted");
-                Thread.currentThread().interrupt();
-            }
-        });
-        consumerThread.setName("SolaceConsumerThread");
-        consumerThread.setDaemon(true);
-        consumerThread.start();
+        log.info("🔗 Solace message listener configured and subscriptions active");
     }
     
     private void subscribeToAgentTopics() throws JCSMPException {
         // Subscribe to individual agent response topics
-        Topic botDetectorTopic = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.BOT_DETECTOR_RESPONSE);
-        Topic trendAnalyzerTopic = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.TREND_ANALYZER_RESPONSE);
-        Topic reviewValidatorTopic = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.REVIEW_VALIDATOR_RESPONSE);
-        Topic promotionDetectorTopic = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.PROMOTION_DETECTOR_RESPONSE);
-        Topic scoreAggregatorTopic = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.SCORE_AGGREGATOR_RESPONSE);
+        Topic botDetectorResponse = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.BOT_DETECTOR_RESPONSE);
+        Topic trendAnalyzerResponse = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.TREND_ANALYZER_RESPONSE);
+        Topic reviewValidatorResponse = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.REVIEW_VALIDATOR_RESPONSE);
+        Topic promotionDetectorResponse = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.PROMOTION_DETECTOR_RESPONSE);
+        Topic scoreAggregatorResponse = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.SCORE_AGGREGATOR_RESPONSE);
         
-        session.addSubscription(botDetectorTopic);
-        session.addSubscription(trendAnalyzerTopic);
-        session.addSubscription(reviewValidatorTopic);
-        session.addSubscription(promotionDetectorTopic);
-        session.addSubscription(scoreAggregatorTopic);
+        // Also subscribe to request topics for debugging (to see what we're publishing)
+        Topic botDetectorRequest = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.BOT_DETECTOR_REQUEST);
+        Topic trendAnalyzerRequest = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.TREND_ANALYZER_REQUEST);
+        Topic reviewValidatorRequest = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.REVIEW_VALIDATOR_REQUEST);
+        Topic promotionDetectorRequest = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.PROMOTION_DETECTOR_REQUEST);
+        Topic scoreAggregatorRequest = JCSMPFactory.onlyInstance().createTopic(SolaceTopics.SCORE_AGGREGATOR_REQUEST);
         
-        log.info("Subscribed to all agent response topics");
+        // Subscribe to response topics
+        session.addSubscription(botDetectorResponse);
+        session.addSubscription(trendAnalyzerResponse);
+        session.addSubscription(reviewValidatorResponse);
+        session.addSubscription(promotionDetectorResponse);
+        session.addSubscription(scoreAggregatorResponse);
+        
+        // Subscribe to request topics for debugging
+        session.addSubscription(botDetectorRequest);
+        session.addSubscription(trendAnalyzerRequest);
+        session.addSubscription(reviewValidatorRequest);
+        session.addSubscription(promotionDetectorRequest);
+        session.addSubscription(scoreAggregatorRequest);
+        
+        // Subscribe to status and score update topics
+        Topic statusUpdates = JCSMPFactory.onlyInstance().createTopic("signalzero/updates/status/>");
+        Topic scoreUpdates = JCSMPFactory.onlyInstance().createTopic("signalzero/updates/score/>");
+        Topic wallOfShameUpdates = JCSMPFactory.onlyInstance().createTopic("signalzero/dashboard/wall-of-shame/>");
+        
+        session.addSubscription(statusUpdates);
+        session.addSubscription(scoreUpdates);
+        session.addSubscription(wallOfShameUpdates);
+        
+        log.info("📡 Subscribed to all agent topics (requests, responses, and updates)");
+    }
+
+    @Override
+    public void onReceive(BytesXMLMessage message) {
+        try {
+            String topicName = message.getDestination().getName();
+            String messageBody = message.getBytes() != null ? new String(message.getBytes()) : "null";
+            String correlationId = message.getCorrelationId();
+            
+            log.info("📨 Received message from topic: {} | correlationId: {} | body: {}", 
+                    topicName, correlationId, messageBody.length() > 200 ? messageBody.substring(0, 200) + "..." : messageBody);
+            
+            // Handle different types of messages
+            if (topicName.contains("/response")) {
+                handleAgentResponse(message);
+            } else if (topicName.contains("/request")) {
+                log.info("🚀 DEBUG - Saw request message on topic: {}", topicName);
+            } else if (topicName.contains("/updates/")) {
+                log.info("📊 Received update message on topic: {}", topicName);
+            } else {
+                log.info("❓ Received unknown message type on topic: {}", topicName);
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to process incoming message", e);
+        }
+    }
+
+    @Override
+    public void onException(JCSMPException exception) {
+        log.error("❌ Solace Consumer Exception: {}", exception.getMessage(), exception);
     }
     
     private void handleAgentResponse(BytesXMLMessage message) {

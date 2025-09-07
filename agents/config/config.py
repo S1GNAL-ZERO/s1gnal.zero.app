@@ -47,9 +47,28 @@ class Config:
     
     # Agent-Specific Configuration
     BOT_DETECTOR_ENABLED = os.getenv('BOT_DETECTOR_ENABLED', 'true').lower() == 'true'
+    BOT_DETECTOR_MIN_CONFIDENCE = float(os.getenv('BOT_DETECTOR_MIN_CONFIDENCE', '0.7'))
+    BOT_DETECTOR_SAMPLE_SIZE = int(os.getenv('BOT_DETECTOR_SAMPLE_SIZE', '1000'))
+    BOT_DETECTOR_USE_TWITTER_API = os.getenv('BOT_DETECTOR_USE_TWITTER_API', 'false').lower() == 'true'
+    BOT_DETECTOR_USE_REDDIT_API = os.getenv('BOT_DETECTOR_USE_REDDIT_API', 'false').lower() == 'true'
+    
     TREND_ANALYZER_ENABLED = os.getenv('TREND_ANALYZER_ENABLED', 'true').lower() == 'true'
+    TREND_ANALYZER_TIME_WINDOW_HOURS = int(os.getenv('TREND_ANALYZER_TIME_WINDOW_HOURS', '168'))
+    TREND_ANALYZER_SPIKE_THRESHOLD = int(os.getenv('TREND_ANALYZER_SPIKE_THRESHOLD', '500'))
+    TREND_ANALYZER_USE_GOOGLE_TRENDS = os.getenv('TREND_ANALYZER_USE_GOOGLE_TRENDS', 'true').lower() == 'true'
+    TREND_ANALYZER_USE_NEWS_API = os.getenv('TREND_ANALYZER_USE_NEWS_API', 'false').lower() == 'true'
+    
     REVIEW_VALIDATOR_ENABLED = os.getenv('REVIEW_VALIDATOR_ENABLED', 'true').lower() == 'true'
+    REVIEW_VALIDATOR_MIN_REVIEWS = int(os.getenv('REVIEW_VALIDATOR_MIN_REVIEWS', '10'))
+    REVIEW_VALIDATOR_TEMPLATE_THRESHOLD = float(os.getenv('REVIEW_VALIDATOR_TEMPLATE_THRESHOLD', '0.8'))
+    REVIEW_VALIDATOR_USE_SCRAPING = os.getenv('REVIEW_VALIDATOR_USE_SCRAPING', 'false').lower() == 'true'
+    REVIEW_VALIDATOR_USE_REVIEWMETA = os.getenv('REVIEW_VALIDATOR_USE_REVIEWMETA', 'false').lower() == 'true'
+    
     PAID_PROMOTION_ENABLED = os.getenv('PAID_PROMOTION_ENABLED', 'true').lower() == 'true'
+    PAID_PROMOTION_KEYWORD_THRESHOLD = int(os.getenv('PAID_PROMOTION_KEYWORD_THRESHOLD', '5'))
+    PAID_PROMOTION_USE_YOUTUBE_API = os.getenv('PAID_PROMOTION_USE_YOUTUBE_API', 'false').lower() == 'true'
+    PAID_PROMOTION_FTC_COMPLIANCE_CHECK = os.getenv('PAID_PROMOTION_FTC_COMPLIANCE_CHECK', 'true').lower() == 'true'
+    
     SCORE_AGGREGATOR_ENABLED = os.getenv('SCORE_AGGREGATOR_ENABLED', 'true').lower() == 'true'
     
     # Score Aggregator Weights (EXACT from DETAILED_DESIGN.md Section 9.2)

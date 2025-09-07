@@ -182,27 +182,24 @@ public class AnalysisView extends VerticalLayout {
         queryLabel.addClassName("muted");
         queryLabel.getStyle().set("color", "var(--muted)");
         
-        // Query input field
-        HorizontalLayout searchBar = new HorizontalLayout();
-        searchBar.addClassName("search");
-        searchBar.setAlignItems(Alignment.CENTER);
-        searchBar.getStyle().set("background", "#0e1430");
-        searchBar.getStyle().set("border", "1px solid #263061");
-        searchBar.getStyle().set("border-radius", "12px");
-        searchBar.getStyle().set("padding", "10px 12px");
-        searchBar.getStyle().set("color", "var(--muted)");
-        searchBar.getStyle().set("margin-top", "8px");
-        searchBar.setWidthFull();
-        
+        // Query input field - simplified for proper user interaction
         queryField = new TextField();
         queryField.setPlaceholder("e.g. \"Stanley Cup tumbler\", \"$BUZZ\", @influencer");
+        queryField.setWidthFull();
         queryField.addClassName("search-input");
-        queryField.getStyle().set("background", "transparent");
-        queryField.getStyle().set("border", "none");
-        queryField.getStyle().set("color", "var(--ink)");
-        queryField.getStyle().set("width", "100%");
         
-        searchBar.add(queryField);
+        // Apply styling directly to the text field for better interaction
+        queryField.getStyle().set("background", "#0e1430");
+        queryField.getStyle().set("border", "1px solid #263061");
+        queryField.getStyle().set("border-radius", "12px");
+        queryField.getStyle().set("padding", "10px 12px");
+        queryField.getStyle().set("color", "var(--ink)");
+        queryField.getStyle().set("margin-top", "8px");
+        
+        // Ensure the field is focusable and interactive
+        queryField.setReadOnly(false);
+        queryField.setEnabled(true);
+        queryField.focus();
         
         // Quick action buttons
         HorizontalLayout quickButtons = new HorizontalLayout();
@@ -229,7 +226,7 @@ public class AnalysisView extends VerticalLayout {
         
         quickButtons.add(stanleyCupBtn, buzzBtn, influencerBtn);
         
-        leftColumn.add(queryLabel, searchBar, quickButtons);
+        leftColumn.add(queryLabel, queryField, quickButtons);
         
         // Right column - Signal selection
         VerticalLayout rightColumn = new VerticalLayout();
@@ -470,25 +467,34 @@ public class AnalysisView extends VerticalLayout {
             // Call analysis service - returns Analysis entity
             CompletableFuture<Analysis> analysisResult = analysisService.submitAnalysisAsync(query);
             
-            analysisResult.thenAccept(analysis -> {
-                // Update UI with entity data - runs on UI thread via access()
+            analysisResult.whenComplete((analysis, throwable) -> {
+                // Always run on UI thread via access()
                 UI.getCurrent().access(() -> {
-                    currentAnalysis = analysis;
-                    updateUIWithAnalysisResult(analysis);
-                    setFormEnabled(true);
-                    
-                    // Show completion notification with entity data
-                    String message = String.format("✅ Analysis complete! %s has %s%% Reality Score", 
-                        analysis.getQuery(), analysis.getRealityScore());
-                    showNotification(message, NotificationVariant.LUMO_SUCCESS);
+                    try {
+                        if (throwable != null) {
+                            // Handle errors
+                            setFormEnabled(true);
+                            showNotification("❌ Analysis failed: " + throwable.getMessage(), NotificationVariant.LUMO_ERROR);
+                        } else if (analysis != null) {
+                            // Handle success
+                            currentAnalysis = analysis;
+                            updateUIWithAnalysisResult(analysis);
+                            setFormEnabled(true);
+                            
+                            // Show completion notification with entity data
+                            String message = String.format("✅ Analysis complete! %s has %s%% Reality Score", 
+                                analysis.getQuery(), analysis.getRealityScore());
+                            showNotification(message, NotificationVariant.LUMO_SUCCESS);
+                        } else {
+                            // Fallback case
+                            setFormEnabled(true);
+                            showNotification("❌ Analysis completed but no result returned", NotificationVariant.LUMO_ERROR);
+                        }
+                    } catch (Exception e) {
+                        setFormEnabled(true);
+                        showNotification("❌ UI update failed: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
+                    }
                 });
-            }).exceptionally(throwable -> {
-                // Handle errors - runs on UI thread
-                UI.getCurrent().access(() -> {
-                    setFormEnabled(true);
-                    showNotification("❌ Analysis failed: " + throwable.getMessage(), NotificationVariant.LUMO_ERROR);
-                });
-                return null;
             });
             
         } catch (Exception e) {

@@ -27,9 +27,9 @@ Refer to **DETAILED_DESIGN.md Section 21.1** for complete environment setup.
 
 ---
 
-## 🚀 HOUR 0: INFRASTRUCTURE SETUP (0:00-1:00) - ✅ COMPLETED
+## 🚀 HOUR 0: INFRASTRUCTURE SETUP (0:00-1:00)
 
-### 0:00-0:15 | Start Core Services - ✅ COMPLETED
+### 0:00-0:15 | Start Core Services
 
 **Reference**: DETAILED_DESIGN.md Section 2.2 & Section 5
 
@@ -37,7 +37,7 @@ Refer to **DETAILED_DESIGN.md Section 21.1** for complete environment setup.
 
 ```bash
 # Start Solace PubSub+ Docker (Section 5.1)
-docker run -d -p 55555:55555 -p 8080:8080 -p 1883:1883 \
+docker run -d -p 55555:55555 -p 8080:8080 -p 1883:1883 -p 8008:8008\
   --shm-size=2g --env username_admin_globalaccesslevel=admin \
   --env username_admin_password=admin --name=solace \
   solace/solace-pubsub-standard
@@ -48,72 +48,94 @@ createdb signalzero
 
 **Files to Create**: None yet - just services
 
-### 0:15-0:30 | Database Schema - ✅ COMPLETED
+### 0:15-0:30 | Database Schema
 
 **Reference**: DETAILED_DESIGN.md Section 6 (Complete Database Schema)
 
 **Claude Task: Create database schema**
-Create: `database/schema.sql` - Complete schema with all 8 tables, views, functions
+Create: `database/schema.sql` - Copy EXACT schema from Section 6.1-6.4
+
+```bash
+psql -d signalzero < database/schema.sql
+```
 
 **Files Created**:
-- ✅ `database/schema.sql` (8 tables, 3 views, 2 functions from Section 6)
 
-### 0:30-0:45 | Spring Boot Project - ✅ COMPLETED
+- `database/schema.sql` (8 tables, 3 views, 2 functions from Section 6)
+
+### 0:30-0:45 | Spring Boot Project
 
 **Reference**: DETAILED_DESIGN.md Section 7 & Section 20.2
 
 **Claude Task: Generate Spring Boot project with Vaadin Flow**
 
-**Files Created**:
-- ✅ `backend/pom.xml` (dependencies from Section 7.1, fixed Maven issues)
-- ✅ `backend/src/main/resources/application.properties` (Section 5.3)
+```bash
+# Use exact structure from Section 20.2 - Vaadin Flow (server-side Java UI)
+spring init --dependencies=web,data-jpa,postgresql,security,actuator,websocket,validation,lombok \
+  --groupId=io.signalzero --artifactId=backend \
+  --name=SignalZero --package-name=io.signalzero \
+  --java-version=17 backend
 
-### 0:45-1:00 | Core Configuration - ✅ COMPLETED
+# Add Vaadin Flow dependency to pom.xml (Section 7.1)
+```
+
+**Files Created**:
+
+- `backend/pom.xml` (dependencies from Section 7.1)
+- `backend/src/main/resources/application.properties` (Section 5.3)
+
+### 0:45-1:00 | Core Configuration
 
 **Reference**: DETAILED_DESIGN.md Section 5.3 & Section 7.2
 
 **Claude Task: Configure application.properties**
+Copy exact configuration from Section 5.3 into `application.properties`
 
 **Files Created**:
-- ✅ `backend/src/main/resources/application.properties`
-- ✅ `backend/src/main/java/io/signalzero/SignalZeroApplication.java` (with @Push)
+
+- `backend/src/main/resources/application.properties`
+- `backend/src/main/resources/application-dev.properties`
 
 ---
 
-## 🔧 HOUR 1: SOLACE INTEGRATION (1:00-2:00) - 🔄 IN PROGRESS
+## 🔧 HOUR 1: SOLACE INTEGRATION (1:00-2:00)
 
-### 1:00-1:15 | Solace Configuration Classes - ✅ COMPLETED
+### 1:00-1:15 | Solace Configuration Classes
 
 **Reference**: DETAILED_DESIGN.md Section 5.4
 
-**Files Created** (from Section 20.4 order):
-1. ✅ `backend/src/main/java/io/signalzero/config/SolaceProperties.java`
-2. ✅ `backend/src/main/java/io/signalzero/config/SolaceConfig.java` (Section 5.4)
-3. ✅ `backend/src/main/java/io/signalzero/messaging/SolaceTopics.java` (Section 3.3)
+**Files to Create** (from Section 20.4 order):
 
-### 1:15-1:30 | Publisher Service - ✅ COMPLETED
+1. `backend/src/main/java/io/signalzero/config/SolaceProperties.java`
+2. `backend/src/main/java/io/signalzero/config/SolaceConfig.java` (Section 5.4)
+3. `backend/src/main/java/io/signalzero/messaging/SolaceTopics.java` (Section 3.3)
+
+### 1:15-1:30 | Publisher Service
 
 **Reference**: DETAILED_DESIGN.md Section 8.1
 
-**Files Created**:
-1. ✅ `backend/src/main/java/io/signalzero/messaging/SolacePublisher.java` (Section 8.1)
+**Files to Create**:
 
-### 1:30-1:45 | Consumer Service - ✅ COMPLETED
+1. `backend/src/main/java/io/signalzero/messaging/SolacePublisher.java` (Section 8.1)
+
+### 1:30-1:45 | Consumer Service
 
 **Reference**: DETAILED_DESIGN.md Section 8.2
 
-**Files Created**:
-1. ✅ `backend/src/main/java/io/signalzero/messaging/SolaceConsumer.java` (Section 8.2)
-2. ✅ `backend/src/main/java/io/signalzero/messaging/AgentResponseHandler.java`
+**Files to Create**:
 
-### 1:45-2:00 | Solace Message Models (Entity-Based) - ✅ COMPLETED
+1. `backend/src/main/java/io/signalzero/messaging/SolaceConsumer.java` (Section 8.2)
+2. `backend/src/main/java/io/signalzero/messaging/AgentResponseHandler.java`
+
+### 1:45-2:00 | Solace Message Models (Entity-Based)
 
 **Reference**: DETAILED_DESIGN.md Section 8 - Repository Pattern
 
-**Files Created**:
-1. ✅ `backend/src/main/java/io/signalzero/messaging/AnalysisRequestMessage.java` - Simple message wrapper
-2. ✅ `backend/src/main/java/io/signalzero/messaging/AgentResponseMessage.java` - Agent result wrapper
-3. ✅ `backend/src/main/java/io/signalzero/messaging/MessageUtils.java` - Entity serialization utilities
+**Files to Create**:
+
+1. `backend/src/main/java/io/signalzero/messaging/AnalysisRequestMessage.java` - Simple message wrapper
+2. `backend/src/main/java/io/signalzero/messaging/AgentResponseMessage.java` - Agent result wrapper
+3. `backend/src/main/java/io/signalzero/messaging/MessageUtils.java` - Entity serialization utilities
 
 **Repository Pattern**: Even Solace messages work with entities. No DTOs anywhere in the system.
 
@@ -141,203 +163,67 @@ public class SolaceConsumer {
 
 ---
 
-**Files Created** (exact order from Section 20.4):
+## 🏗️ HOUR 2: CORE BACKEND SERVICES (2:00-3:00)
 
-1. ✅ `backend/src/main/java/io/signalzero/model/User.java` - Complete with subscription management, usage tracking, referral system
-2. ✅ `backend/src/main/java/io/signalzero/model/Analysis.java` - Complete with Reality Score calculation and Wall of Shame criteria
-3. ✅ `backend/src/main/java/io/signalzero/model/AgentResult.java` - Complete with Map<String,Object> evidence field
-4. ✅ `backend/src/main/java/io/signalzero/model/WallOfShame.java` - Complete with engagement metrics
-5. ✅ `backend/src/main/java/io/signalzero/model/SubscriptionTier.java` (enum) - FREE, PRO, BUSINESS, ENTERPRISE
-6. ✅ `backend/src/main/java/io/signalzero/model/AnalysisStatus.java` (enum) - PENDING, PROCESSING, COMPLETE, FAILED
-7. ✅ `backend/src/main/java/io/signalzero/model/ManipulationLevel.java` (enum) - GREEN, YELLOW, RED with descriptions
->>>>>>> Stashed changes
-
-### ✅ 2:15-2:30 | Repository Interfaces - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 8 - Repository-Based Data Access Pattern
-
-<<<<<<< Updated upstream
-**Files to Create**:
-1. `backend/src/main/java/io/signalzero/repository/UserRepository.java` - extends JpaRepository<User, UUID>
-2. `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - extends JpaRepository<Analysis, UUID>
-3. `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - extends JpaRepository<AgentResult, UUID>
-4. `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - extends JpaRepository<WallOfShame, UUID>
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/repository/UserRepository.java` - Authentication, subscription management, usage tracking
-2. ✅ `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - Public/private analyses, Wall of Shame queries, analytics
-3. ✅ `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - Agent completion tracking, performance metrics
-4. ✅ `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - Active entries, engagement tracking, search queries
->>>>>>> Stashed changes
-
-**✅ Repository Pattern Implemented**: All data operations work directly with JPA entities through repository methods.
-
-### ✅ 2:30-2:45 | Core Services - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 9
-
-<<<<<<< Updated upstream
-**Files to Create**:
-1. `backend/src/main/java/io/signalzero/service/AnalysisService.java` (Section 9.1)
-2. `backend/src/main/java/io/signalzero/service/UserService.java`
-3. `backend/src/main/java/io/signalzero/service/UsageTrackingService.java` (Section 9.3)
-
-**Important**: Use EXACT Reality Score calculation from Section 9.2:
-- Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/service/AnalysisService.java` - Complete analysis workflow with hardcoded demo values
-2. ✅ `backend/src/main/java/io/signalzero/service/UsageTrackingService.java` - Usage management with exact tier limits
-
-**✅ Reality Score Calculation**: Exact weights implemented (Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%)
-
-**✅ Hardcoded Demo Values**: Stanley Cup = 62% bots, 34% Reality Score; $BUZZ = 87% bots, 12% Reality Score; Prime Energy = 71% bots, 29% Reality Score
->>>>>>> Stashed changes
-
-### ✅ 2:45-3:00 | REST Controllers - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 10
-
-<<<<<<< Updated upstream
-**Files to Create**:
-1. `backend/src/main/java/io/signalzero/controller/AnalysisController.java` (Section 10.1)
-2. `backend/src/main/java/io/signalzero/controller/AuthController.java`
-3. `backend/src/main/java/io/signalzero/controller/DashboardController.java`
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/controller/AnalysisController.java` - Complete REST endpoints for analysis operations
-2. ✅ `backend/src/main/java/io/signalzero/controller/AuthController.java` - User authentication, registration, profile management
-3. ✅ `backend/src/main/java/io/signalzero/controller/DashboardController.java` - Dashboard data, Wall of Shame, analytics, system health
-
-**✅ Production-Ready Controllers**: All controllers work directly with JPA entities, include comprehensive error handling, and implement hardcoded demo values.
->>>>>>> Stashed changes
-## ✅ HOUR 2: CORE BACKEND SERVICES (2:00-3:00) - COMPLETED
-
-### ✅ 2:00-2:15 | JPA Entities - COMPLETED
+### 2:00-2:15 | JPA Entities
 
 **Reference**: DETAILED_DESIGN.md Section 7.3
 
-**Files Created** (exact order from Section 20.4):
+**Files to Create** (exact order from Section 20.4):
 
-1. ✅ `backend/src/main/java/io/signalzero/model/User.java` - Complete with subscription management, usage tracking, referral system
-2. ✅ `backend/src/main/java/io/signalzero/model/Analysis.java` - Complete with Reality Score calculation and Wall of Shame criteria
-3. ✅ `backend/src/main/java/io/signalzero/model/AgentResult.java` - Complete with Map<String,Object> evidence field
-4. ✅ `backend/src/main/java/io/signalzero/model/WallOfShame.java` - Complete with engagement metrics
-5. ✅ `backend/src/main/java/io/signalzero/model/SubscriptionTier.java` (enum) - FREE, PRO, BUSINESS, ENTERPRISE
-6. ✅ `backend/src/main/java/io/signalzero/model/AnalysisStatus.java` (enum) - PENDING, PROCESSING, COMPLETE, FAILED
-7. ✅ `backend/src/main/java/io/signalzero/model/ManipulationLevel.java` (enum) - GREEN, YELLOW, RED with descriptions
+1. `backend/src/main/java/io/signalzero/model/User.java`
+2. `backend/src/main/java/io/signalzero/model/Analysis.java`
+3. `backend/src/main/java/io/signalzero/model/AgentResult.java`
+4. `backend/src/main/java/io/signalzero/model/SubscriptionTier.java` (enum)
+5. `backend/src/main/java/io/signalzero/model/AnalysisStatus.java` (enum)
 
-### ✅ 2:15-2:30 | Repository Interfaces - COMPLETED
+### 2:15-2:30 | Repository Interfaces (Pure Data Access Layer)
 
 **Reference**: DETAILED_DESIGN.md Section 8 - Repository-Based Data Access Pattern
 
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/repository/UserRepository.java` - Authentication, subscription management, usage tracking
-2. ✅ `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - Public/private analyses, Wall of Shame queries, analytics
-3. ✅ `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - Agent completion tracking, performance metrics
-4. ✅ `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - Active entries, engagement tracking, search queries
-
-**✅ Repository Pattern Implemented**: All data operations work directly with JPA entities through repository methods.
-
-### ✅ 2:30-2:45 | Core Services - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 9
-
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/service/AnalysisService.java` - Complete analysis workflow with hardcoded demo values
-2. ✅ `backend/src/main/java/io/signalzero/service/UsageTrackingService.java` - Usage management with exact tier limits
-
-**✅ Reality Score Calculation**: Exact weights implemented (Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%)
-
-**✅ Hardcoded Demo Values**: Stanley Cup = 62% bots, 34% Reality Score; $BUZZ = 87% bots, 12% Reality Score; Prime Energy = 71% bots, 29% Reality Score
-
-### ✅ 2:45-3:00 | REST Controllers - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 10
-
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/controller/AnalysisController.java` - Complete REST endpoints for analysis operations
-2. ✅ `backend/src/main/java/io/signalzero/controller/AuthController.java` - User authentication, registration, profile management
-3. ✅ `backend/src/main/java/io/signalzero/controller/DashboardController.java` - Dashboard data, Wall of Shame, analytics, system health
-
-**✅ Production-Ready Controllers**: All controllers work directly with JPA entities, include comprehensive error handling, and implement hardcoded demo values.
-=======
-**Files Created** (exact order from Section 20.4):
-
-1. ✅ `backend/src/main/java/io/signalzero/model/User.java` - Complete with subscription management, usage tracking, referral system
-2. ✅ `backend/src/main/java/io/signalzero/model/Analysis.java` - Complete with Reality Score calculation and Wall of Shame criteria
-3. ✅ `backend/src/main/java/io/signalzero/model/AgentResult.java` - Complete with Map<String,Object> evidence field
-4. ✅ `backend/src/main/java/io/signalzero/model/WallOfShame.java` - Complete with engagement metrics
-5. ✅ `backend/src/main/java/io/signalzero/model/SubscriptionTier.java` (enum) - FREE, PRO, BUSINESS, ENTERPRISE
-6. ✅ `backend/src/main/java/io/signalzero/model/AnalysisStatus.java` (enum) - PENDING, PROCESSING, COMPLETE, FAILED
-7. ✅ `backend/src/main/java/io/signalzero/model/ManipulationLevel.java` (enum) - GREEN, YELLOW, RED with descriptions
->>>>>>> Stashed changes
-
-### ✅ 2:15-2:30 | Repository Interfaces - COMPLETED
-
-**Reference**: DETAILED_DESIGN.md Section 8 - Repository-Based Data Access Pattern
-
-<<<<<<< Updated upstream
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/repository/UserRepository.java` - extends JpaRepository<User, UUID>
 2. `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - extends JpaRepository<Analysis, UUID>
 3. `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - extends JpaRepository<AgentResult, UUID>
 4. `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - extends JpaRepository<WallOfShame, UUID>
-=======
-**Files Created**:
 
-1. ✅ `backend/src/main/java/io/signalzero/repository/UserRepository.java` - Authentication, subscription management, usage tracking
-2. ✅ `backend/src/main/java/io/signalzero/repository/AnalysisRepository.java` - Public/private analyses, Wall of Shame queries, analytics
-3. ✅ `backend/src/main/java/io/signalzero/repository/AgentResultRepository.java` - Agent completion tracking, performance metrics
-4. ✅ `backend/src/main/java/io/signalzero/repository/WallOfShameRepository.java` - Active entries, engagement tracking, search queries
->>>>>>> Stashed changes
+**No DTOs Anywhere**: All data operations work directly with JPA entities through repository methods.
 
-**✅ Repository Pattern Implemented**: All data operations work directly with JPA entities through repository methods.
+```java
+public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
+    List<Analysis> findByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<Analysis> findByIsPublicTrueOrderByCreatedAtDesc();
+    List<Analysis> findByBotPercentageGreaterThan(BigDecimal threshold);
 
-### ✅ 2:30-2:45 | Core Services - COMPLETED
+    @Query("SELECT a FROM Analysis a WHERE a.realityScore < :score")
+    List<Analysis> findManipulatedAnalyses(@Param("score") BigDecimal score);
+}
+```
+
+### 2:30-2:45 | Core Services
 
 **Reference**: DETAILED_DESIGN.md Section 9
 
-<<<<<<< Updated upstream
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/service/AnalysisService.java` (Section 9.1)
 2. `backend/src/main/java/io/signalzero/service/UserService.java`
 3. `backend/src/main/java/io/signalzero/service/UsageTrackingService.java` (Section 9.3)
 
 **Important**: Use EXACT Reality Score calculation from Section 9.2:
+
 - Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%
-=======
-**Files Created**:
 
-1. ✅ `backend/src/main/java/io/signalzero/service/AnalysisService.java` - Complete analysis workflow with hardcoded demo values
-2. ✅ `backend/src/main/java/io/signalzero/service/UsageTrackingService.java` - Usage management with exact tier limits
-
-**✅ Reality Score Calculation**: Exact weights implemented (Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%)
-
-**✅ Hardcoded Demo Values**: Stanley Cup = 62% bots, 34% Reality Score; $BUZZ = 87% bots, 12% Reality Score; Prime Energy = 71% bots, 29% Reality Score
->>>>>>> Stashed changes
-
-### ✅ 2:45-3:00 | REST Controllers - COMPLETED
+### 2:45-3:00 | REST Controllers
 
 **Reference**: DETAILED_DESIGN.md Section 10
 
-<<<<<<< Updated upstream
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/controller/AnalysisController.java` (Section 10.1)
 2. `backend/src/main/java/io/signalzero/controller/AuthController.java`
 3. `backend/src/main/java/io/signalzero/controller/DashboardController.java`
-=======
-**Files Created**:
-
-1. ✅ `backend/src/main/java/io/signalzero/controller/AnalysisController.java` - Complete REST endpoints for analysis operations
-2. ✅ `backend/src/main/java/io/signalzero/controller/AuthController.java` - User authentication, registration, profile management
-3. ✅ `backend/src/main/java/io/signalzero/controller/DashboardController.java` - Dashboard data, Wall of Shame, analytics, system health
-
-**✅ Production-Ready Controllers**: All controllers work directly with JPA entities, include comprehensive error handling, and implement hardcoded demo values.
->>>>>>> Stashed changes
 
 ---
 
@@ -350,6 +236,7 @@ public class SolaceConsumer {
 **Important**: Vaadin Flow is server-side Java - NO Node.js, React, or separate frontend build
 
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/SignalZeroApplication.java` (with @Push)
 2. `backend/src/main/resources/META-INF/resources/themes/signalzero/styles.css` (Vaadin theme)
 
@@ -358,6 +245,7 @@ public class SolaceConsumer {
 **Reference**: DETAILED_DESIGN.md Section 11.1 & Section 8
 
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/ui/DashboardView.java` - Direct entity binding to Vaadin Grid
 2. `backend/src/main/java/io/signalzero/ui/components/RealityScoreGauge.java`
 
@@ -386,6 +274,7 @@ public class DashboardView extends VerticalLayout {
 **Reference**: DETAILED_DESIGN.md Section 11.2
 
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/ui/AnalysisView.java`
 2. `backend/src/main/java/io/signalzero/ui/components/AnalysisForm.java`
 
@@ -394,106 +283,117 @@ public class DashboardView extends VerticalLayout {
 **Reference**: DETAILED_DESIGN.md Section 11.3
 
 **Files to Create**:
+
 1. `backend/src/main/java/io/signalzero/ui/AnalysisUpdateBroadcaster.java` (Section 11.3)
 2. `backend/src/main/java/io/signalzero/ui/WallOfShameView.java`
 
 ---
 
-## 🤖 HOUR 4: PYTHON AGENTS - BASE (4:00-5:00) ✅ COMPLETED
+## 🤖 HOUR 4: PYTHON AGENTS - BASE (4:00-5:00)
 
-### 4:00-4:15 | Python Project Structure ✅
+### 4:00-4:15 | Python Project Structure
+
 **Reference**: DETAILED_DESIGN.md Section 20.3 & Section 4
 
-**✅ COMPLETED - Directory Structure Created**:
+**Create Directory Structure** (from Section 20.3):
+
 ```
 agents/
-├── requirements.txt        ✅ (Section 4.1 dependencies)
-├── .env                   ✅ (Environment configuration)
+├── requirements.txt        (Section 4.1 dependencies)
 ├── config/
-│   └── config.py          ✅ (Section 4.3 connection details)
+│   └── config.py           (Section 4.3 connection details)
 ├── base/
-│   └── base_agent.py      ✅ (Section 4.2 base class)
-├── bot_detection_agent.py ✅ (moved from agents/ subdirectory)
-├── trend_analysis_agent.py ✅
-├── review_validator_agent.py ✅
-├── paid_promotion_agent.py ✅
-├── score_aggregator_agent.py ✅
-├── start_all_agents.py    ✅ (orchestration script)
+│   └── base_agent.py       (Section 4.2 base class)
+├── agents/                 (individual agents)
 └── utils/
-    ├── mock_data_generator.py ✅ (Section 4.5 demo data)
-    └── solace_client.py   ✅ (Solace connectivity utility)
+    └── mock_data.py        (Section 4.5 demo data)
 ```
 
-### 4:15-4:30 | Base Agent Class ✅
+### 4:15-4:30 | Base Agent Class
+
 **Reference**: DETAILED_DESIGN.md Section 4.2
 
-**✅ COMPLETED Files**:
-1. `agents/base/base_agent.py` - Production-ready base class with Solace integration
-2. `agents/config/config.py` - Environment-based configuration management
+**Files to Create**:
 
-### 4:30-4:45 | Bot Detection Agent ✅
+1. `agents/base/base_agent.py` - Copy EXACT code from Section 4.2
+2. `agents/config/config.py` - Solace connection settings
+
+### 4:30-4:45 | Bot Detection Agent
+
 **Reference**: DETAILED_DESIGN.md Section 4.4
 
-**✅ COMPLETED Files**:
-1. `agents/bot_detection_agent.py` - Full implementation with hardcoded demo values
+**Files to Create**:
 
-**✅ VERIFIED**: Returns 62% bots for "Stanley Cup" (hardcoded as required)
+1. `agents/agents/bot_detection_agent.py` - Use implementation from Section 4.4
 
-### 4:45-5:00 | Mock Data Module ✅
+**Critical**: Must return 62% bots for "Stanley Cup" (hardcoded)
+
+### 4:45-5:00 | Mock Data Module
+
 **Reference**: DETAILED_DESIGN.md Section 4.5
 
-**✅ COMPLETED Files**:
-1. `agents/utils/mock_data_generator.py` - Comprehensive mock data generators
-2. `agents/utils/solace_client.py` - Production-ready Solace client utility
+**Files to Create**:
+
+1. `agents/utils/mock_data.py` - Demo data generators from Section 4.5
+2. `agents/test_integration.py` - Test script
 
 ---
 
-## 🚀 HOUR 5: MULTI-AGENT SYSTEM (5:00-6:00) ✅ COMPLETED
+## 🚀 HOUR 5: MULTI-AGENT SYSTEM (5:00-6:00)
 
-### 5:00-5:10 | Trend Analysis Agent ✅
+### 5:00-5:10 | Trend Analysis Agent
+
 **Reference**: DETAILED_DESIGN.md Section 4.4
 
-**✅ COMPLETED Files**:
-1. `agents/trend_analysis_agent.py` - Full velocity analysis and spike detection
+**Files to Create**:
 
-### 5:10-5:20 | Review Validator Agent ✅
+1. `agents/agents/trend_analysis_agent.py`
+
+### 5:10-5:20 | Review Validator Agent
+
 **Reference**: DETAILED_DESIGN.md Section 4.4
 
-**✅ COMPLETED Files**:
-1. `agents/review_validator_agent.py` - Complete authenticity analysis with temporal patterns
+**Files to Create**:
 
-### 5:20-5:30 | Promotion Detector Agent ✅
+1. `agents/agents/review_validator_agent.py`
+
+### 5:20-5:30 | Promotion Detector Agent
+
 **Reference**: DETAILED_DESIGN.md Section 4.4
 
-**✅ COMPLETED Files**:
-1. `agents/paid_promotion_agent.py` - FTC compliance and undisclosed sponsorship detection
+**Files to Create**:
 
-### 5:30-5:45 | Score Aggregator Agent ✅
+1. `agents/agents/promotion_detector_agent.py`
+
+### 5:30-5:45 | Score Aggregator Agent
+
 **Reference**: DETAILED_DESIGN.md Section 4.4
 
-**✅ COMPLETED Files**:
-1. `agents/score_aggregator_agent.py` - EXACT weighted calculation from Section 9.2
+**Files to Create**:
 
-**✅ VERIFIED**: Uses exact weights (Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%)
+1. `agents/agents/score_aggregator_agent.py`
 
-### 5:45-6:00 | Agent Orchestrator ✅
+**Critical**: Use EXACT weighted calculation from Section 9.2
+
+### 5:45-6:00 | Agent Orchestrator
+
 **Reference**: DETAILED_DESIGN.md Section 4
 
-**✅ COMPLETED Files**:
-1. `agents/start_all_agents.py` - Production-ready orchestration with health monitoring
-2. `agents/requirements.txt` - All Python dependencies
+**Files to Create**:
 
-**✅ PRODUCTION READY**: All agents use `agents/.env` configuration and include comprehensive error handling
+1. `agents/start_all_agents.py` - Launches all 5 agents
+2. `agents/stop_all_agents.sh` - Cleanup script
 
 ---
 
-## ⚡ HOUR 6: INTEGRATION & TESTING (6:00-7:00) - 🔄 IN PROGRESS
+## ⚡ HOUR 6: INTEGRATION & TESTING (6:00-7:00)
 
 ### 6:00-6:15 | WebSocket Integration
 
 **Reference**: DETAILED_DESIGN.md Section 11.3
 
 **Update Files**:
+
 - `AnalysisService.java` - Add real-time broadcasting
 - `DashboardView.java` - Add push listeners
 
@@ -502,9 +402,11 @@ agents/
 **Reference**: DETAILED_DESIGN.md Section 14
 
 **Files to Create**:
+
 1. `database/demo_data.sql` - Copy from Section 14
 
 **Critical Demo Values** (Section 14):
+
 - Stanley Cup: 62% bots, 34% Reality Score
 - $BUZZ: 87% bots, 12% Reality Score  
 - Prime Energy: 71% bots, 29% Reality Score
@@ -514,6 +416,7 @@ agents/
 **Reference**: DETAILED_DESIGN.md Section 13
 
 **Update All Services** with:
+
 - Timeout handling (5 seconds max)
 - Fallback to mock data
 - User-friendly error messages
@@ -523,6 +426,7 @@ agents/
 **Reference**: DETAILED_DESIGN.md Section 15
 
 **Test Checklist** (from Section 15.1):
+
 1. [ ] Submit "Stanley Cup" analysis
 2. [ ] All 5 agents process in parallel
 3. [ ] Reality Score = 34% (±2%)
@@ -536,17 +440,23 @@ agents/
 ## 🎯 HOURS 7-12: REMAINING FEATURES
 
 ### Payment Integration (Optional)
+
 **Reference**: DETAILED_DESIGN.md Section 16
+
 - Skip if running out of time
 - Use mock payment flow for demo
 
 ### Marketing Features (Optional)
+
 **Reference**: DETAILED_DESIGN.md Section 12
+
 - Skip automation agents
 - Focus on core functionality
 
-### Static Landing Page (Hour 11) 
+### Static Landing Page (Hour 11)
+
 **Reference**: DETAILED_DESIGN.md Section 18
+
 - Separate marketing page (static HTML/CSS/JS)
 - Deploy to GitHub Pages (marketing only)
 - Main app UI is Vaadin Flow (runs with Spring Boot)
@@ -556,6 +466,7 @@ agents/
 ## 📝 CRITICAL NOTES FOR CLAUDE
 
 ### Follow DETAILED_DESIGN.md Exactly For:
+
 1. **Reality Score Calculation** - Section 9.2 (40/30/20/10 weights)
 2. **Demo Data Values** - Section 14 (Stanley Cup = 34%)
 3. **Solace Topics** - Section 3.3 (exact naming)
@@ -563,6 +474,7 @@ agents/
 5. **File Structure** - Section 20 (73+ files)
 
 ### Hardcoded Demo Values (Section 14):
+
 ```python
 # In every agent - MUST match
 if "stanley cup" in query.lower():
@@ -572,6 +484,7 @@ elif "$buzz" in query.lower():
 ```
 
 ### Skip If Time Constrained (Section 19):
+
 1. Payment processing (use mock)
 2. Email notifications
 3. Marketing automation
@@ -579,6 +492,7 @@ elif "$buzz" in query.lower():
 5. API rate limiting
 
 ### Must Work For Demo (Section 15):
+
 - [ ] Live analysis of any query
 - [ ] Stanley Cup returns 34% Reality Score
 - [ ] All 5 agents running
@@ -603,6 +517,7 @@ From DETAILED_DESIGN.md Section 13:
 ## 📂 FINAL FILE COUNT CHECK
 
 Per DETAILED_DESIGN.md Section 20.4, you should have:
+
 - **Backend**: 35+ Java files
 - **Frontend**: 5+ Vaadin Flow views (server-side Java)
 - **Agents**: 10+ Python files

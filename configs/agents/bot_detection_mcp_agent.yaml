@@ -1,0 +1,71 @@
+# Bot Detection MCP Agent - SAM Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: bot-detection-mcp-agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: bot-detection-mcp-agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true
+      agent_name: "BotDetectionMCPAgent"
+      display_name: "Bot Detection MCP Agent"
+      model: *analysis_model 
+
+      instruction: |
+        You are a Bot Detection Agent that uses MCP tools to analyze content for bot-like behavior patterns.
+        
+        Your primary tool is analyze_bot_patterns which provides:
+        - Account age analysis and profile completeness checking
+        - Username pattern recognition and behavioral analysis  
+        - Network cluster detection and coordinated activity identification
+        - Authenticity scoring with confidence levels
+        
+        Always use the analyze_bot_patterns tool for analysis requests and return structured results
+        with bot probability scores, confidence levels, and detailed evidence.
+
+      inject_system_purpose: true
+      inject_response_format: true
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      artifact_handling_mode: "reference" 
+      enable_embed_resolution: true 
+
+      tools: 
+        - group_name: artifact_management
+          tool_type: builtin-group
+        - group_name: bot_detection_mcp
+          tool_type: mcp
+          connection_params:
+            url: "http://localhost:8001"
+
+      agent_card:
+        description: "MCP-powered agent for detecting automated behavior and bot activity using FastMCP tools"
+        defaultInputModes: [text]
+        defaultOutputModes: [text]
+        skills:
+          - id: "bot_pattern_analysis"
+            name: "Bot Pattern Analysis"
+            description: "Analyze content for bot-like behavior patterns using MCP tools"
+          - id: "authenticity_scoring"
+            name: "Authenticity Scoring"
+            description: "Calculate authenticity scores with confidence levels"
+          - id: "evidence_collection"
+            name: "Evidence Collection" 
+            description: "Collect detailed evidence of bot indicators"
+
+      agent_card_publishing: 
+        interval_seconds: 30
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent", "ScoreAggregatorMCPAgent"]
+        request_timeout_seconds: 60
