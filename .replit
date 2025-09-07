@@ -1,0 +1,95 @@
+# S1GNAL.ZERO Replit Configuration
+# AGI Ventures Canada Hackathon 3.0
+
+run = "bash scripts/start-replit.sh"
+entrypoint = "backend/src/main/java/io/signalzero/SignalZeroApplication.java"
+
+[nix]
+channel = "stable-22_11"
+
+[deployment]
+run = ["sh", "-c", "cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=replit"]
+deploymentTarget = "cloudrun"
+
+[languages]
+
+[languages.java]
+pattern = "**/*.java"
+
+[languages.java.languageServer]
+start = "jdt-language-server"
+
+[languages.python]
+pattern = "**/*.py"
+
+[languages.python.languageServer]
+start = "pylsp"
+
+[env]
+# Replit-specific environment variables
+REPL_OWNER = "${REPL_OWNER}"
+REPL_SLUG = "${REPL_SLUG}"
+
+# Application Configuration
+PORT = "8080"
+SERVER_PORT = "8080"
+SPRING_PROFILES_ACTIVE = "replit"
+
+# Database Configuration (Replit PostgreSQL)
+DATABASE_URL = "jdbc:postgresql://localhost:5432/main"
+DATABASE_USERNAME = "main"
+DATABASE_PASSWORD = ""
+
+# Demo Mode Configuration
+DEMO_MODE = "true"
+USE_MOCK_DATA = "true"
+HACKATHON_MODE = "true"
+AUTO_SEED_DATA = "true"
+
+# Disable external services for Replit demo
+SOLACE_HOST = "tcp://localhost:55555"
+SOLACE_VPN = "default"
+SOLACE_USERNAME = "admin"
+SOLACE_PASSWORD = "admin"
+
+# Security
+JWT_SECRET = "replit-s1gn4lz3r0-demo-secret-key"
+
+# Vaadin Configuration for Replit
+VAADIN_LAUNCH_BROWSER = "false"
+VAADIN_PRODUCTION_MODE = "false"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
+
+[packager]
+language = "java"
+
+[packager.features]
+packageSearch = true
+guessImports = true
+enabledForHosting = false
+
+[unitTest]
+language = "java"
+
+[debugger]
+support = true
+
+[debugger.interactive]
+transport = "localhost:5005"
+startCommand = ["dap-java"]
+
+[debugger.interactive.initializeMessage]
+command = "initialize"
+type = "request"
+
+[debugger.interactive.launchMessage]
+command = "launch"
+type = "request"
+
+[debugger.interactive.launchMessage.arguments]
+mainClass = "io.signalzero.SignalZeroApplication"
+projectName = "signalzero-backend"
+classPaths = ["backend/target/classes"]
+modulePaths = []
