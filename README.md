@@ -634,10 +634,10 @@ cp agents/.env.example agents/.env  # (if available)
 
 **Critical (Must Set):**
 ```bash
-# Database
-DB_URL=jdbc:postgresql://localhost:5432/signalzero
-DB_USERNAME=postgres
-DB_PASSWORD=your_postgres_password
+# Database (Supabase Configuration)
+DATABASE_URL=jdbc:postgresql://localhost:54322/postgres?ssl=false&sslmode=disable
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=postgres
 
 # Solace PubSub+ (Spring Boot Backend)
 SOLACE_HOST=tcp://localhost:55555
