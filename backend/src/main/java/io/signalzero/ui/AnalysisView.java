@@ -82,6 +82,12 @@ public class AnalysisView extends VerticalLayout {
     // Current analysis tracking
     private Analysis currentAnalysis;
     private String currentAnalysisQuery; // Track by query string for timing fix
+    
+    // Reality Score status components
+    private Div realityScoreStatusDiv;
+    private Span realityScorePercentage;
+    private Span realityScoreDescription;
+    private HorizontalLayout realityScoreIndicators;
 
     /**
      * Initialize the analysis view with all components.
@@ -361,7 +367,7 @@ public class AnalysisView extends VerticalLayout {
     }
     
     /**
-     * Create the Reality Score panel with gauge.
+     * Create the Reality Score panel with gauge and status information.
      */
     private Div createRealityScorePanel() {
         Div panel = new Div();
@@ -383,20 +389,142 @@ public class AnalysisView extends VerticalLayout {
         
         header.add(title);
         
-        // Panel body with gauge
+        // Panel body with gauge and status
         Div body = new Div();
         body.addClassName("panel-body");
         body.getStyle().set("padding", "16px");
         body.getStyle().set("display", "flex");
-        body.getStyle().set("justify-content", "center");
+        body.getStyle().set("gap", "20px");
         body.getStyle().set("align-items", "center");
+        
+        // Left side: Reality Score Gauge
+        Div gaugeContainer = new Div();
+        gaugeContainer.getStyle().set("display", "flex");
+        gaugeContainer.getStyle().set("justify-content", "center");
+        gaugeContainer.getStyle().set("align-items", "center");
+        gaugeContainer.getStyle().set("flex-shrink", "0");
         
         // Initialize the Reality Score Gauge
         realityScoreGauge = new RealityScoreGauge();
-        body.add(realityScoreGauge);
+        gaugeContainer.add(realityScoreGauge);
         
+        // Right side: Status information
+        createRealityScoreStatusSection();
+        
+        body.add(gaugeContainer, realityScoreStatusDiv);
         panel.add(header, body);
         return panel;
+    }
+    
+    /**
+     * Create the Reality Score status information section.
+     */
+    private void createRealityScoreStatusSection() {
+        realityScoreStatusDiv = new Div();
+        realityScoreStatusDiv.getStyle().set("flex", "1");
+        realityScoreStatusDiv.getStyle().set("display", "flex");
+        realityScoreStatusDiv.getStyle().set("flex-direction", "column");
+        realityScoreStatusDiv.getStyle().set("gap", "16px");
+        realityScoreStatusDiv.getStyle().set("padding-left", "8px");
+        
+        // Reality Score percentage display
+        realityScorePercentage = new Span("34%");
+        realityScorePercentage.getStyle().set("font-size", "2.5rem");
+        realityScorePercentage.getStyle().set("font-weight", "700");
+        realityScorePercentage.getStyle().set("color", "var(--warn)");
+        realityScorePercentage.getStyle().set("line-height", "1");
+        realityScorePercentage.getStyle().set("margin", "0");
+        
+        // Reality Score description
+        realityScoreDescription = new Span("Mostly manufactured hype");
+        realityScoreDescription.getStyle().set("color", "var(--muted)");
+        realityScoreDescription.getStyle().set("font-size", "1rem");
+        realityScoreDescription.getStyle().set("margin-bottom", "8px");
+        
+        // Status indicators container
+        realityScoreIndicators = new HorizontalLayout();
+        realityScoreIndicators.setSpacing(false);
+        realityScoreIndicators.getStyle().set("gap", "8px");
+        realityScoreIndicators.getStyle().set("flex-wrap", "wrap");
+        realityScoreIndicators.getStyle().set("align-items", "center");
+        
+        // Create initial indicators
+        updateRealityScoreStatusIndicators(62, 34); // Default demo values
+        
+        realityScoreStatusDiv.add(realityScorePercentage, realityScoreDescription, realityScoreIndicators);
+    }
+    
+    /**
+     * Update the Reality Score status indicators based on analysis results.
+     */
+    private void updateRealityScoreStatusIndicators(int botPercentage, int realityScore) {
+        realityScoreIndicators.removeAll();
+        
+        // Bot surge indicator
+        if (botPercentage > 60) {
+            Span botSurgeTag = createStatusTag("🤖 Bot surge", "var(--bad)");
+            realityScoreIndicators.add(botSurgeTag);
+        } else if (botPercentage > 30) {
+            Span botActivityTag = createStatusTag("🤖 Bot activity", "var(--warn)");
+            realityScoreIndicators.add(botActivityTag);
+        }
+        
+        // Paid promotion indicator (simulated based on reality score)
+        if (realityScore < 40) {
+            Span paidPromosTag = createStatusTag("💰 Paid promos", "var(--bad)");
+            realityScoreIndicators.add(paidPromosTag);
+        } else if (realityScore < 70) {
+            Span somePromosTag = createStatusTag("💰 Some promos", "var(--warn)");
+            realityScoreIndicators.add(somePromosTag);
+        }
+        
+        // Review clusters indicator (simulated based on bot percentage)
+        if (botPercentage > 50) {
+            Span reviewClustersTag = createStatusTag("⭐ Review clusters", "var(--bad)");
+            realityScoreIndicators.add(reviewClustersTag);
+        } else if (botPercentage > 25) {
+            Span mixedReviewsTag = createStatusTag("⭐ Mixed reviews", "var(--warn)");
+            realityScoreIndicators.add(mixedReviewsTag);
+        }
+        
+        // Trending manipulation indicator
+        if (realityScore < 30) {
+            Span trendManipTag = createStatusTag("📈 Trend manipulation", "var(--bad)");
+            realityScoreIndicators.add(trendManipTag);
+        }
+        
+        // If no negative indicators, show positive ones
+        if (realityScoreIndicators.getComponentCount() == 0) {
+            if (realityScore > 80) {
+                Span authenticTag = createStatusTag("✅ Authentic", "var(--ok)");
+                realityScoreIndicators.add(authenticTag);
+            } else if (realityScore > 60) {
+                Span mostlyAuthenticTag = createStatusTag("✅ Mostly authentic", "var(--ok)");
+                realityScoreIndicators.add(mostlyAuthenticTag);
+            }
+        }
+    }
+    
+    /**
+     * Create a status indicator tag with specified text and color.
+     */
+    private Span createStatusTag(String text, String color) {
+        Span tag = new Span(text);
+        tag.getStyle().set("display", "inline-flex");
+        tag.getStyle().set("align-items", "center");
+        tag.getStyle().set("padding", "4px 8px");
+        tag.getStyle().set("border-radius", "999px");
+        tag.getStyle().set("font-size", "0.75rem");
+        tag.getStyle().set("font-weight", "500");
+        tag.getStyle().set("background", color.equals("var(--ok)") ? "rgba(16, 185, 129, 0.1)" : 
+                                       color.equals("var(--warn)") ? "rgba(245, 158, 11, 0.1)" :
+                                       "rgba(239, 68, 68, 0.1)");
+        tag.getStyle().set("color", color);
+        tag.getStyle().set("border", "1px solid " + 
+                          (color.equals("var(--ok)") ? "rgba(16, 185, 129, 0.2)" : 
+                           color.equals("var(--warn)") ? "rgba(245, 158, 11, 0.2)" :
+                           "rgba(239, 68, 68, 0.2)"));
+        return tag;
     }
     
     /**
@@ -881,24 +1009,48 @@ public class AnalysisView extends VerticalLayout {
                                 // Update narrative summary with the most recent analysis
                                 generateNarrativeSummary(recentAnalysis);
                             } else {
-                                System.out.println("DEBUG: Recent analysis incomplete or missing data");
+                                System.out.println("DEBUG: Recent analysis incomplete or missing data - setting demo values");
+                                
+                                // Set demo values for gauge so it's not empty
+                                if (realityScoreGauge != null) {
+                                    realityScoreGauge.updateScore(75, 32, io.signalzero.model.ManipulationLevel.GREEN);
+                                }
+                                
                                 narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
                                     "Total agent results available: " + allAgentResults.size());
                             }
                         } else {
-                            System.out.println("DEBUG: Analysis not found for ID: " + mostRecentAnalysisId);
+                            System.out.println("DEBUG: Analysis not found for ID: " + mostRecentAnalysisId + " - setting demo values");
+                            
+                            // Set demo values for gauge so it's not empty
+                            if (realityScoreGauge != null) {
+                                realityScoreGauge.updateScore(75, 32, io.signalzero.model.ManipulationLevel.GREEN);
+                            }
+                            
                             narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
                                 "Total agent results available: " + allAgentResults.size());
                         }
                     } catch (Exception e) {
-                        System.out.println("DEBUG: Could not load recent analysis: " + e.getMessage());
+                        System.out.println("DEBUG: Could not load recent analysis: " + e.getMessage() + " - setting demo values");
+                        
+                        // Set demo values for gauge so it's not empty
+                        if (realityScoreGauge != null) {
+                            realityScoreGauge.updateScore(75, 32, io.signalzero.model.ManipulationLevel.GREEN);
+                        }
+                        
                         narrativeSummaryDiv.setText("Showing " + recentResults.size() + " most recent agent results from database. " +
                             "Total agent results available: " + allAgentResults.size());
                     }
                 }
                 
             } else {
-                System.out.println("DEBUG: No agent results found in database");
+                System.out.println("DEBUG: No agent results found in database - setting demo values");
+                
+                // Set demo values for gauge even if no agent results
+                if (realityScoreGauge != null) {
+                    realityScoreGauge.updateScore(75, 32, io.signalzero.model.ManipulationLevel.GREEN);
+                }
+                
                 narrativeSummaryDiv.setText("No agent results found in database. Run an analysis to generate results.");
             }
             

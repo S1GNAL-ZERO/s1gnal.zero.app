@@ -86,6 +86,7 @@ Thumbs.db
 # Logs
 logs/
 *.log
+sam.log.*
 
 # Runtime data
 pids/

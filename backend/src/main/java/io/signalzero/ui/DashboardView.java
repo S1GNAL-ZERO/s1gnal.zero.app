@@ -14,7 +14,6 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -102,12 +101,12 @@ public class DashboardView extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         
-        // Ensure the view extends to bottom of page with full height
-        getStyle().set("height", "100vh");
-        getStyle().set("max-height", "100vh");
+        // Allow the view to be taller than viewport to accommodate all content
+        getStyle().set("min-height", "100vh");
+        getStyle().set("height", "auto"); // Allow natural height based on content
         getStyle().set("display", "flex");
         getStyle().set("flex-direction", "column");
-        getStyle().set("overflow", "hidden"); // Prevent scrolling on main container
+        getStyle().set("overflow", "visible"); // Allow natural scrolling
         
         // Initialize the query field first
         queryField = new TextField();
@@ -152,16 +151,22 @@ public class DashboardView extends VerticalLayout {
         realityScorePanel.getStyle().set("height", "320px"); // Increased height to better fit agent data
         realityScorePanel.getStyle().set("margin-bottom", "12px");
         
-        // Latest Flags Panel - takes all remaining space to bottom
+        // Latest Flags Panel - takes all remaining space to bottom with increased height
         Div latestFlagsPanel = createLatestFlagsPanel();
         latestFlagsPanel.setWidthFull();
         latestFlagsPanel.getStyle().set("flex", "1 1 0"); // Grow to fill remaining space
-        latestFlagsPanel.getStyle().set("min-height", "0");
+        latestFlagsPanel.getStyle().set("min-height", "400px"); // Increased minimum height to show more rows
         latestFlagsPanel.getStyle().set("max-height", "none");
         latestFlagsPanel.getStyle().set("overflow", "hidden");
         
+        // Footer section - fixed at bottom
+        Div footer = createFooter();
+        footer.getStyle().set("flex-shrink", "0");
+        footer.getStyle().set("margin-top", "12px");
+        footer.getStyle().set("padding", "16px 0");
+        
         // Add all sections directly to the main view
-        add(kpiSection, realityScorePanel, latestFlagsPanel);
+        add(kpiSection, realityScorePanel, latestFlagsPanel, footer);
     }
     
     /**
@@ -170,7 +175,7 @@ public class DashboardView extends VerticalLayout {
     private HorizontalLayout createKPISection() {
         HorizontalLayout kpiLayout = new HorizontalLayout();
         kpiLayout.addClassName("grid");
-        kpiLayout.addClassName("cols-3");
+        kpiLayout.addClassName("cols-3");   
         kpiLayout.setWidthFull();
         kpiLayout.setSpacing(true);
         
@@ -310,25 +315,50 @@ public class DashboardView extends VerticalLayout {
         
         Span scoreValue = new Span("34%");
         scoreValue.addClassName("score-value");
-        scoreValue.getStyle().set("font-size", "40px");
+        scoreValue.getStyle().set("font-size", "28px"); // Reduced from 40px
         scoreValue.getStyle().set("font-weight", "900");
         scoreValue.getStyle().set("line-height", "1");
+        scoreValue.getStyle().set("color", "#f59e0b"); // Orange color for mixed signals
         
         Span scoreCaption = new Span("Mostly manufactured hype");
         scoreCaption.addClassName("muted");
-        scoreCaption.getStyle().set("color", "var(--muted)");
+        scoreCaption.getStyle().set("color", "#94a3b8"); // Light gray color
+        scoreCaption.getStyle().set("font-size", "14px");
         
-        // Tags for findings
+        // Tags for findings with proper styling
         HorizontalLayout findingsTags = new HorizontalLayout();
         findingsTags.setSpacing(true);
         findingsTags.getStyle().set("margin-top", "10px");
         
-        Span botTag = new Span("Bot surge");
+        Span botTag = new Span("🤖 Bot surge");
         botTag.addClassName("tag");
-        Span promoTag = new Span("Paid promos");
+        botTag.getStyle().set("padding", "4px 8px");
+        botTag.getStyle().set("border-radius", "999px");
+        botTag.getStyle().set("font-size", "12px");
+        botTag.getStyle().set("font-weight", "500");
+        botTag.getStyle().set("background", "rgba(239, 68, 68, 0.1)");
+        botTag.getStyle().set("color", "#ef4444");
+        botTag.getStyle().set("border", "1px solid rgba(239, 68, 68, 0.3)");
+        
+        Span promoTag = new Span("💰 Paid promos");
         promoTag.addClassName("tag");
-        Span clusterTag = new Span("Review clusters");
+        promoTag.getStyle().set("padding", "4px 8px");
+        promoTag.getStyle().set("border-radius", "999px");
+        promoTag.getStyle().set("font-size", "12px");
+        promoTag.getStyle().set("font-weight", "500");
+        promoTag.getStyle().set("background", "rgba(245, 158, 11, 0.1)");
+        promoTag.getStyle().set("color", "#f59e0b");
+        promoTag.getStyle().set("border", "1px solid rgba(245, 158, 11, 0.3)");
+        
+        Span clusterTag = new Span("⭐ Review clusters");
         clusterTag.addClassName("tag");
+        clusterTag.getStyle().set("padding", "4px 8px");
+        clusterTag.getStyle().set("border-radius", "999px");
+        clusterTag.getStyle().set("font-size", "12px");
+        clusterTag.getStyle().set("font-weight", "500");
+        clusterTag.getStyle().set("background", "rgba(168, 85, 247, 0.1)");
+        clusterTag.getStyle().set("color", "#a855f7");
+        clusterTag.getStyle().set("border", "1px solid rgba(168, 85, 247, 0.3)");
         
         findingsTags.add(botTag, promoTag, clusterTag);
         
@@ -572,52 +602,125 @@ public class DashboardView extends VerticalLayout {
             .setFlexGrow(2);
             
         recentAnalysesGrid.addColumn(new ComponentRenderer<>(analysis -> {
+            HorizontalLayout botLayout = new HorizontalLayout();
+            botLayout.setAlignItems(Alignment.CENTER);
+            botLayout.setSpacing(false);
+            botLayout.getStyle().set("gap", "8px");
+            
+            // Bot percentage with text-only styling (no background)
             Span botSpan = new Span(analysis.getBotPercentage() + "%");
-            botSpan.getStyle().set("color", "var(--s1gnal-error)");
-            botSpan.getStyle().set("font-weight", "bold");
-            return botSpan;
+            int botPercentage = analysis.getBotPercentage().intValue();
+            
+            // Color-coded bot percentage - text only
+            if (botPercentage > 60) {
+                botSpan.getStyle().set("color", "#ef4444"); // Red for high bot activity
+            } else if (botPercentage > 30) {
+                botSpan.getStyle().set("color", "#f59e0b"); // Orange for moderate bot activity
+            } else {
+                botSpan.getStyle().set("color", "#10b981"); // Green for low bot activity
+            }
+            
+            botSpan.getStyle().set("font-weight", "700");
+            botSpan.getStyle().set("font-size", "14px");
+            
+            botLayout.add(botSpan);
+            return botLayout;
         })).setHeader("Bot %").setFlexGrow(1);
         
         recentAnalysesGrid.addColumn(new ComponentRenderer<>(analysis -> {
-            Span scoreSpan = new Span(analysis.getRealityScore() + "%");
+            HorizontalLayout scoreLayout = new HorizontalLayout();
+            scoreLayout.setAlignItems(Alignment.CENTER);
+            scoreLayout.setSpacing(false);
+            scoreLayout.getStyle().set("gap", "8px");
+            
+            // Reality Score without decimals and smaller font
+            int realityScore = analysis.getRealityScore().intValue();
+            Span scoreSpan = new Span(realityScore + "%");
             ManipulationLevel level = analysis.getManipulationLevel();
-            String color = level == ManipulationLevel.GREEN ? "var(--s1gnal-success)" :
-                          level == ManipulationLevel.YELLOW ? "var(--s1gnal-warning)" : "var(--s1gnal-error)";
+            
+            // Color coding - text only (no background)
+            String color;
+            if (level == ManipulationLevel.GREEN) {
+                color = "#10b981";
+            } else if (level == ManipulationLevel.YELLOW) {
+                color = "#f59e0b";
+            } else {
+                color = "#ef4444";
+            }
+            
+            // Reduced font size from 2.5rem to 1.8rem
             scoreSpan.getStyle().set("color", color);
-            scoreSpan.getStyle().set("font-weight", "bold");
-            return scoreSpan;
+            scoreSpan.getStyle().set("font-size", "1.8rem");
+            scoreSpan.getStyle().set("font-weight", "700");
+            scoreSpan.getStyle().set("line-height", "1");
+            scoreSpan.getStyle().set("margin", "0");
+            
+            scoreLayout.add(scoreSpan);
+            return scoreLayout;
         })).setHeader("Reality Score").setFlexGrow(1);
         
         recentAnalysesGrid.addColumn(new ComponentRenderer<>(analysis -> {
-            Span badge = new Span(analysis.getManipulationLevel().getDescription());
-            badge.addClassName("manipulation-badge");
-            badge.addClassName("manipulation-" + analysis.getManipulationLevel().name().toLowerCase());
-            return badge;
-        })).setHeader("Classification").setFlexGrow(1);
+            HorizontalLayout classificationLayout = new HorizontalLayout();
+            classificationLayout.setAlignItems(Alignment.CENTER);
+            classificationLayout.setSpacing(false);
+            
+            // Create status tag matching AnalysisView style (no background)
+            Span badge = createStatusTag(analysis.getManipulationLevel().getDescription(), 
+                analysis.getManipulationLevel());
+            
+            classificationLayout.add(badge);
+            return classificationLayout;
+        })).setHeader("Classification").setFlexGrow(2).setWidth("200px"); // Increased flex and width for classification
         
         recentAnalysesGrid.addColumn(new ComponentRenderer<>(analysis -> {
+            HorizontalLayout statusLayout = new HorizontalLayout();
+            statusLayout.setAlignItems(Alignment.CENTER);
+            statusLayout.setSpacing(false);
+            statusLayout.getStyle().set("gap", "6px");
+            
             Icon statusIcon;
-            String color;
+            String color, bgColor;
             switch (analysis.getStatus()) {
                 case PENDING:
                     statusIcon = new Icon(VaadinIcon.CLOCK);
-                    color = "var(--s1gnal-warning)";
+                    color = "#f59e0b";
+                    bgColor = "rgba(245, 158, 11, 0.1)";
                     break;
                 case PROCESSING:
                     statusIcon = new Icon(VaadinIcon.REFRESH);
-                    color = "var(--s1gnal-primary)";
+                    color = "#667eea";
+                    bgColor = "rgba(102, 126, 234, 0.1)";
                     statusIcon.addClassName("s1gnal-loading");
                     break;
                 case COMPLETE:
                     statusIcon = new Icon(VaadinIcon.CHECK_CIRCLE);
-                    color = "var(--s1gnal-success)";
+                    color = "#10b981";
+                    bgColor = "rgba(16, 185, 129, 0.1)";
                     break;
                 default:
                     statusIcon = new Icon(VaadinIcon.EXCLAMATION_CIRCLE);
-                    color = "var(--s1gnal-error)";
+                    color = "#ef4444";
+                    bgColor = "rgba(239, 68, 68, 0.1)";
             }
+            
+            // Enhanced status icon with background
+            Div iconContainer = new Div();
+            iconContainer.add(statusIcon);
+            iconContainer.getStyle().set("display", "flex");
+            iconContainer.getStyle().set("align-items", "center");
+            iconContainer.getStyle().set("justify-content", "center");
+            iconContainer.getStyle().set("width", "28px");
+            iconContainer.getStyle().set("height", "28px");
+            iconContainer.getStyle().set("border-radius", "50%");
+            iconContainer.getStyle().set("background", bgColor);
+            iconContainer.getStyle().set("border", "1px solid " + color + "33");
+            
             statusIcon.getStyle().set("color", color);
-            return statusIcon;
+            statusIcon.getStyle().set("width", "16px");
+            statusIcon.getStyle().set("height", "16px");
+            
+            statusLayout.add(iconContainer);
+            return statusLayout;
         })).setHeader("Status").setFlexGrow(0).setWidth("80px");
         
         recentAnalysesGrid.addColumn(analysis -> 
@@ -634,7 +737,7 @@ public class DashboardView extends VerticalLayout {
         section.addClassName("agent-results");
         section.getStyle().set("height", "280px"); // Increased height to match panel increase
         section.getStyle().set("overflow-y", "auto");
-        section.getStyle().set("margin-left", "-50px"); 
+        section.getStyle().set("margin-left", "-30px");
         
         // Title
         Span title = new Span("Agent Results");
@@ -784,7 +887,7 @@ public class DashboardView extends VerticalLayout {
     /**
      * Create footer with hackathon and project information.
      */
-    private void createFooter() {
+    private Div createFooter() {
         Div footer = new Div();
         footer.addClassName("s1gnal-footer");
         
@@ -795,231 +898,207 @@ public class DashboardView extends VerticalLayout {
         footerText.add(new Span("Solace PubSub+"));
         
         footer.add(footerText);
-        add(footer);
+        return footer;
     }
 
     /**
-     * Perform analysis by calling service layer.
-     * Repository pattern: Service works with entities, returns entity results.
+     * Refresh dashboard data from repository.
+     */
+    private void refreshDashboardData() {
+        System.out.println("DEBUG: Refreshing dashboard data...");
+        
+        // Load recent completed analyses
+        List<Analysis> recentAnalyses = analysisRepository
+            .findTop10ByStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
+        System.out.println("DEBUG: Found " + recentAnalyses.size() + " recent completed analyses");
+        
+        // Update recent analyses grid
+        if (recentAnalysesGrid != null) {
+            recentAnalysesGrid.setItems(recentAnalyses);
+        }
+        
+        // Load current analysis data if available
+        if (!recentAnalyses.isEmpty() && realityScoreGauge != null) {
+            Analysis latestAnalysis = recentAnalyses.get(0);
+            currentAnalysis = latestAnalysis;
+            System.out.println("DEBUG: Updating Reality Score gauge with analysis: " + latestAnalysis.getQuery());
+            
+            // Update the gauge with latest analysis
+            if (latestAnalysis.getRealityScore() != null) {
+                realityScoreGauge.updateScore(
+                    latestAnalysis.getRealityScore().intValue(),
+                    latestAnalysis.getBotPercentage() != null ? latestAnalysis.getBotPercentage().intValue() : 0,
+                    latestAnalysis.getManipulationLevel() != null ? latestAnalysis.getManipulationLevel() : ManipulationLevel.YELLOW
+                );
+            }
+            
+            // Load agent results for the current analysis
+            loadAgentResultsForAnalysis(latestAnalysis.getId());
+        }
+    }
+
+    /**
+     * Load agent results for a specific analysis.
+     */
+    private void loadAgentResultsForAnalysis(UUID analysisId) {
+        System.out.println("DEBUG: Loading agent results for analysis ID: " + analysisId);
+        
+        List<AgentResult> agentResults = agentResultRepository.findByAnalysisIdAndStatusOrderByCreatedAtAsc(
+            analysisId, 
+            io.signalzero.model.AnalysisStatus.COMPLETE
+        );
+        
+        System.out.println("DEBUG: Found " + agentResults.size() + " agent results for analysis " + analysisId);
+        
+        // Log agent results for debugging
+        for (AgentResult result : agentResults) {
+            System.out.println("DEBUG: Agent result - Type: " + result.getAgentType() + 
+                             ", Score: " + result.getScore() + ", Status: " + result.getStatus());
+        }
+        
+        // Update agent results grid
+        if (agentResultsGrid != null) {
+            agentResultsGrid.setItems(agentResults);
+            System.out.println("DEBUG: Updated agent results grid with " + agentResults.size() + " results");
+        }
+    }
+
+    /**
+     * Perform analysis on the entered query.
      */
     private void performAnalysis() {
-        String query = queryField.getValue().trim();
-        
-        if (query.isEmpty()) {
-            showNotification("Please enter a product, trend, or influencer to analyze", NotificationVariant.LUMO_ERROR);
+        String query = queryField.getValue();
+        if (query == null || query.trim().isEmpty()) {
+            Notification.show("Please enter a query to analyze", 3000, Notification.Position.TOP_CENTER);
             return;
         }
         
-        // Disable form during processing
-        setFormEnabled(false);
-        realityScoreGauge.setProcessing(true);
+        // Disable button and show processing state
+        analyzeButton.setEnabled(false);
+        analyzeButton.setText("Analyzing...");
         
-        // Show processing notification
-        showNotification("🔍 Analyzing '" + query + "' with 5 AI agents...", NotificationVariant.LUMO_PRIMARY);
+        if (realityScoreGauge != null) {
+            realityScoreGauge.setProcessing(true);
+        }
         
-        try {
-            // Call analysis service - returns Analysis entity
-            CompletableFuture<Analysis> analysisResult = analysisService.submitAnalysisAsync(query);
-            
-            analysisResult.thenAccept(analysis -> {
-                // Update UI with entity data - runs on UI thread via access()
-                UI.getCurrent().access(() -> {
-                    currentAnalysis = analysis;
-                    updateUIWithAnalysisResult(analysis);
-                    refreshDashboardData();
-                    setFormEnabled(true);
+        // Start async analysis
+        analysisService.submitAnalysisAsync(query.trim()).whenComplete((analysis, throwable) -> {
+            UI ui = getUI().orElse(null);
+            if (ui != null) {
+                ui.access(() -> {
+                    // Re-enable button
+                    analyzeButton.setEnabled(true);
+                    analyzeButton.setText("🚀 ANALYZE");
                     
-                    // Show completion notification with entity data
-                    String message = String.format("✅ Analysis complete! %s has %s%% Reality Score", 
-                        analysis.getQuery(), analysis.getRealityScore());
-                    showNotification(message, NotificationVariant.LUMO_SUCCESS);
+                    if (throwable != null || analysis == null) {
+                        if (realityScoreGauge != null) {
+                            realityScoreGauge.updateScore(25, 0, ManipulationLevel.YELLOW); // Default fallback score
+                        }
+                        Notification notification = Notification.show(
+                            "Analysis completed with limited data. Using fallback results.", 
+                            5000, 
+                            Notification.Position.TOP_CENTER
+                        );
+                        notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
+                    } else {
+                        // Update gauge with results
+                        if (realityScoreGauge != null && analysis.getRealityScore() != null) {
+                            realityScoreGauge.updateScore(
+                                analysis.getRealityScore().intValue(),
+                                analysis.getBotPercentage() != null ? analysis.getBotPercentage().intValue() : 0,
+                                analysis.getManipulationLevel() != null ? analysis.getManipulationLevel() : ManipulationLevel.YELLOW
+                            );
+                        }
+                        
+                        currentAnalysis = analysis;
+                        
+                        // Load agent results for this analysis
+                        loadAgentResultsForAnalysis(analysis.getId());
+                        
+                        // Refresh dashboard to show new analysis
+                        refreshDashboardData();
+                        
+                        Notification notification = Notification.show(
+                            "Analysis complete! Reality Score: " + analysis.getRealityScore() + "%", 
+                            4000, 
+                            Notification.Position.TOP_CENTER
+                        );
+                        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    }
+                    
+                    // Clear the input field
+                    queryField.clear();
                 });
-            }).exceptionally(throwable -> {
-                // Handle errors - runs on UI thread
-                UI.getCurrent().access(() -> {
-                    setFormEnabled(true);
-                    realityScoreGauge.setProcessing(false);
-                    showNotification("❌ Analysis failed: " + throwable.getMessage(), NotificationVariant.LUMO_ERROR);
-                });
-                return null;
-            });
-            
-        } catch (Exception e) {
-            setFormEnabled(true);
-            realityScoreGauge.setProcessing(false);
-            showNotification("❌ Error starting analysis: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
-        }
+            }
+        });
     }
 
     /**
-     * Update UI components with analysis results from entity.
+     * Create a status indicator tag with specified text and manipulation level.
+     * Matches AnalysisView style but without background colors (text only).
      */
-    private void updateUIWithAnalysisResult(Analysis analysis) {
-        if (analysis != null && analysis.getStatus() == AnalysisStatus.COMPLETE) {
-            // Update gauge with entity data
-            realityScoreGauge.updateScore(
-                analysis.getRealityScore().intValue(),
-                analysis.getBotPercentage().intValue(),
-                analysis.getManipulationLevel()
-            );
-        }
-    }
-
-    /**
-     * Refresh dashboard statistics using repository queries.
-     * Repository pattern: Direct queries to get aggregate data.
-     */
-    private void refreshDashboardData() {
-        try {
-            System.out.println("DEBUG: Refreshing dashboard data...");
-            
-            // Load recent analyses from repository (get completed ones)
-            List<Analysis> recentAnalyses = analysisRepository.findTop10ByStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
-            System.out.println("DEBUG: Found " + recentAnalyses.size() + " recent completed analyses");
-            
-            // If no completed analyses, get all recent ones
-            if (recentAnalyses.isEmpty()) {
-                recentAnalyses = analysisRepository.findByStatusOrderByCreatedAtDesc(AnalysisStatus.COMPLETE);
-                System.out.println("DEBUG: Found " + recentAnalyses.size() + " total completed analyses");
-                
-                // If still empty, get any status to show something
-                if (recentAnalyses.isEmpty()) {
-                    recentAnalyses = analysisRepository.findByIsPublicTrueOrderByCreatedAtDesc();
-                    System.out.println("DEBUG: Found " + recentAnalyses.size() + " public analyses of any status");
-                }
-            }
-            
-            // Update grid with real data
-            recentAnalysesGrid.setItems(recentAnalyses);
-            
-            // Update Reality Score gauge with most recent completed analysis
-            Analysis mostRecentAnalysis = recentAnalyses.stream()
-                .filter(analysis -> analysis.getStatus() == AnalysisStatus.COMPLETE)
-                .findFirst()
-                .orElse(null);
-                
-            if (mostRecentAnalysis != null) {
-                System.out.println("DEBUG: Updating Reality Score gauge with analysis: " + mostRecentAnalysis.getQuery());
-                realityScoreGauge.updateScore(
-                    mostRecentAnalysis.getRealityScore().intValue(),
-                    mostRecentAnalysis.getBotPercentage().intValue(),
-                    mostRecentAnalysis.getManipulationLevel()
-                );
-                
-                // Load real agent results for the most recent analysis
-                loadAgentResultsForAnalysis(mostRecentAnalysis.getId());
-            } else {
-                // If no completed analyses found, set demo values to show gauge is working
-                System.out.println("DEBUG: No completed analyses found, setting demo values for gauge");
-                realityScoreGauge.updateScore(34, 62, ManipulationLevel.YELLOW);
-                
-                // Load recent agent results regardless of analysis completion
-                List<AgentResult> recentAgentResults = agentResultRepository.findByStatusOrderByCreatedAtAsc(AnalysisStatus.COMPLETE);
-                if (!recentAgentResults.isEmpty()) {
-                    // Limit to 5 most recent results
-                    List<AgentResult> limitedResults = recentAgentResults.stream()
-                        .limit(5)
-                        .collect(java.util.stream.Collectors.toList());
-                    System.out.println("DEBUG: Loading " + limitedResults.size() + " recent agent results");
-                    agentResultsGrid.setItems(limitedResults);
-                }
-            }
-            
-        } catch (Exception e) {
-            System.err.println("ERROR: Error refreshing dashboard data: " + e.getMessage());
-            e.printStackTrace();
-            
-            // Fallback to demo data if there's an error
-            System.out.println("DEBUG: Setting fallback demo data for gauge");
-            realityScoreGauge.updateScore(34, 62, ManipulationLevel.YELLOW);
-        }
-    }
-
-    /**
-     * Load agent results for a specific analysis and update the agent results grid.
-     * Repository pattern: Direct query to AgentResultRepository for real production data.
-     */
-    private void loadAgentResultsForAnalysis(UUID analysisId) {
-        try {
-            System.out.println("DEBUG: Loading agent results for analysis ID: " + analysisId);
-            
-            // Query repository for all agent results for this analysis
-            List<AgentResult> agentResults = agentResultRepository.findByAnalysisIdOrderByCreatedAtAsc(analysisId);
-            System.out.println("DEBUG: Found " + agentResults.size() + " agent results for analysis " + analysisId);
-            
-            // Log agent results for debugging
-            for (AgentResult result : agentResults) {
-                System.out.println("DEBUG: Agent result - Type: " + result.getAgentType() + 
-                    ", Score: " + result.getScore() + ", Status: " + result.getStatus());
-            }
-            
-            // Update the agent results grid with real data
-            if (agentResultsGrid != null) {
-                agentResultsGrid.setItems(agentResults);
-                System.out.println("DEBUG: Updated agent results grid with " + agentResults.size() + " results");
-            } else {
-                System.out.println("DEBUG: Agent results grid is null - cannot update");
-            }
-            
-        } catch (Exception e) {
-            System.err.println("ERROR: Failed to load agent results for analysis " + analysisId + ": " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Enable/disable form components during processing.
-     */
-    private void setFormEnabled(boolean enabled) {
-        queryField.setEnabled(enabled);
-        analyzeButton.setEnabled(enabled);
+    private Span createStatusTag(String text, ManipulationLevel level) {
+        Span tag = new Span(text);
+        tag.getStyle().set("display", "inline-flex");
+        tag.getStyle().set("align-items", "center");
+        tag.getStyle().set("padding", "4px 8px");
+        tag.getStyle().set("border-radius", "999px");
+        tag.getStyle().set("font-size", "0.75rem");
+        tag.getStyle().set("font-weight", "500");
+        tag.getStyle().set("border", "1px solid transparent");
         
-        if (enabled) {
-            analyzeButton.setText("🚀 ANALYZE");
-            realityScoreGauge.setProcessing(false);
+        // Color coding based on manipulation level - text only (no background)
+        String color;
+        if (level == ManipulationLevel.GREEN) {
+            color = "#10b981";
+        } else if (level == ManipulationLevel.YELLOW) {
+            color = "#f59e0b";
         } else {
-            analyzeButton.setText("🔄 PROCESSING...");
+            color = "#ef4444";
         }
+        
+        tag.getStyle().set("color", color);
+        return tag;
     }
 
     /**
-     * Show notification to user.
+     * Capitalize first letter of a string.
      */
-    private void showNotification(String message, NotificationVariant variant) {
-        Notification notification = new Notification();
-        notification.addClassName("s1gnal-notification");
-        
-        if (variant == NotificationVariant.LUMO_SUCCESS) {
-            notification.addClassName("success");
-        } else if (variant == NotificationVariant.LUMO_ERROR) {
-            notification.addClassName("error");
+    private String capitalizeFirst(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
         }
-        
-        notification.setText(message);
-        notification.setDuration(5000);
-        notification.setPosition(Notification.Position.TOP_END);
-        notification.open();
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /**
      * Set up real-time updates when view is attached.
-     * CRITICAL: Required for @Push functionality (CLAUDE.md requirement).
      */
     @Override
     protected void onAttach(AttachEvent attachEvent) {
-        super.onAttach(attachEvent);
+        UI ui = attachEvent.getUI();
         
         // Register for real-time analysis updates
-        UI ui = attachEvent.getUI();
         broadcasterRegistration = AnalysisUpdateBroadcaster.register(analysis -> {
             ui.access(() -> {
-                // Flash update animation
-                addClassName("s1gnal-update-flash");
+                // Flash animation for new data
+                getElement().getClassList().add("s1gnal-update-flash");
                 
                 // Update current analysis if it matches
-                if (currentAnalysis != null && 
-                    currentAnalysis.getId().equals(analysis.getId())) {
-                    updateUIWithAnalysisResult(analysis);
+                if (currentAnalysis != null && currentAnalysis.getId().equals(analysis.getId())) {
+                    currentAnalysis = analysis;
+                    
+                    // Update Reality Score gauge
+                    if (realityScoreGauge != null && analysis.getRealityScore() != null) {
+                        realityScoreGauge.updateScore(
+                            analysis.getRealityScore().intValue(),
+                            analysis.getBotPercentage() != null ? analysis.getBotPercentage().intValue() : 0,
+                            analysis.getManipulationLevel() != null ? analysis.getManipulationLevel() : ManipulationLevel.YELLOW
+                        );
+                    }
+                    
+                    // Load updated agent results
+                    loadAgentResultsForAnalysis(analysis.getId());
                 }
                 
                 // Refresh dashboard data with new entity

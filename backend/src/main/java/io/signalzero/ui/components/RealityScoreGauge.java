@@ -76,43 +76,194 @@ public class RealityScoreGauge extends Div {
         svgContainer.getStyle().set("width", "100%");
         svgContainer.getStyle().set("height", "100%");
         
-        // Create SVG markup with background circle, progress circle, and center dot
+        // Create enhanced SVG markup with advanced graphics and animations
         String svgContent = String.format("""
             <svg width="%d" height="%d" class="gauge-svg" style="overflow: visible;">
-                <!-- Background circle -->
+                <defs>
+                    <!-- Gradient definitions -->
+                    <linearGradient id="gaugeGradient" x1="0%%" y1="0%%" x2="100%%" y2="100%%">
+                        <stop offset="0%%" style="stop-color:#667eea;stop-opacity:0.8" />
+                        <stop offset="50%%" style="stop-color:#764ba2;stop-opacity:0.6" />
+                        <stop offset="100%%" style="stop-color:#667eea;stop-opacity:0.4" />
+                    </linearGradient>
+                    
+                    <!-- Progress gradient -->
+                    <linearGradient id="progressGradient" x1="0%%" y1="0%%" x2="100%%" y2="0%%">
+                        <stop offset="0%%" style="stop-color:#10b981;stop-opacity:1" />
+                        <stop offset="50%%" style="stop-color:#f59e0b;stop-opacity:1" />
+                        <stop offset="100%%" style="stop-color:#ef4444;stop-opacity:1" />
+                    </linearGradient>
+                    
+                    <!-- Animated gradient for processing state -->
+                    <linearGradient id="processingGradient" x1="0%%" y1="0%%" x2="100%%" y2="0%%">
+                        <stop offset="0%%" style="stop-color:#667eea;stop-opacity:0.3">
+                            <animate attributeName="stop-opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+                        </stop>
+                        <stop offset="50%%" style="stop-color:#764ba2;stop-opacity:0.5">
+                            <animate attributeName="stop-opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+                        </stop>
+                        <stop offset="100%%" style="stop-color:#667eea;stop-opacity:0.3">
+                            <animate attributeName="stop-opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+                        </stop>
+                    </linearGradient>
+                    
+                    <!-- Glow filter -->
+                    <filter id="glow" x="-50%%" y="-50%%" width="200%%" height="200%%">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge> 
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <!-- Drop shadow filter -->
+                    <filter id="dropshadow" x="-50%%" y="-50%%" width="200%%" height="200%%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+                    </filter>
+                </defs>
+                
+                <!-- Animated background rings -->
+                <circle cx="%d" cy="%d" r="%d" 
+                        stroke="url(#gaugeGradient)" 
+                        stroke-width="1" 
+                        fill="none"
+                        opacity="0.3">
+                    <animate attributeName="r" values="%d;%d;%d" dur="4s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="4s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle cx="%d" cy="%d" r="%d" 
+                        stroke="url(#gaugeGradient)" 
+                        stroke-width="1" 
+                        fill="none"
+                        opacity="0.2">
+                    <animate attributeName="r" values="%d;%d;%d" dur="6s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.2;0.05;0.2" dur="6s" repeatCount="indefinite"/>
+                </circle>
+                
+                <!-- Main background circle with enhanced styling -->
                 <circle cx="%d" cy="%d" r="%d" 
                         class="gauge-circle" 
-                        stroke="rgba(232, 236, 255, 0.2)" 
+                        stroke="rgba(232, 236, 255, 0.15)" 
                         stroke-width="%d" 
+                        fill="none"
+                        filter="url(#dropshadow)"/>
+                        
+                <!-- Secondary background circle for depth -->
+                <circle cx="%d" cy="%d" r="%d" 
+                        stroke="rgba(232, 236, 255, 0.05)" 
+                        stroke-width="2" 
                         fill="none"/>
                         
-                <!-- Progress circle -->
+                <!-- Progress circle with enhanced styling -->
                 <circle cx="%d" cy="%d" r="%d" 
                         id="progress-circle"
-                        stroke="#f59e0b" 
+                        stroke="url(#progressGradient)" 
                         stroke-width="%d" 
                         fill="none"
                         stroke-dasharray="%.1f"
                         stroke-dashoffset="%.1f"
                         stroke-linecap="round"
-                        transform="rotate(-90 %d %d)"/>
-                        
-                <!-- Center dot -->
-                <circle cx="%d" cy="%d" r="4" 
-                        fill="#667eea"/>
+                        transform="rotate(-90 %d %d)"
+                        filter="url(#glow)"
+                        opacity="0.9">
+                    <!-- Smooth transition animation -->
+                    <animate attributeName="stroke-dashoffset" 
+                             id="progress-animation"
+                             dur="1.5s" 
+                             fill="freeze"
+                             calcMode="spline"
+                             keySplines="0.4 0 0.2 1"
+                             keyTimes="0;1"/>
+                </circle>
+                
+                <!-- Animated tick marks around the gauge -->
+                <g id="tick-marks" stroke="rgba(232, 236, 255, 0.3)" stroke-width="2">
+                    <!-- Major ticks at 0, 25, 50, 75, 100 -->
+                    <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(0 %d %d)"/>
+                    <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(90 %d %d)"/>
+                    <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(180 %d %d)"/>
+                    <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(270 %d %d)"/>
+                    
+                    <!-- Minor ticks -->
+                    <g stroke-width="1" opacity="0.5">
+                        <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(45 %d %d)"/>
+                        <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(135 %d %d)"/>
+                        <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(225 %d %d)"/>
+                        <line x1="%d" y1="%d" x2="%d" y2="%d" transform="rotate(315 %d %d)"/>
+                    </g>
+                </g>
             </svg>
             """,
             GAUGE_SIZE, GAUGE_SIZE,
+            
+            // Animated background rings
+            GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS + 20, RADIUS + 20, RADIUS + 35, RADIUS + 20,
+            GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS + 30, RADIUS + 30, RADIUS + 50, RADIUS + 30,
+            
+            // Main circles
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
+            GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS - 4,
             GAUGE_SIZE/2, GAUGE_SIZE/2, RADIUS, STROKE_WIDTH,
             CIRCUMFERENCE, CIRCUMFERENCE, // Initial state: fully hidden
             GAUGE_SIZE/2, GAUGE_SIZE/2,
-            GAUGE_SIZE/2, GAUGE_SIZE/2
+            
+            // Major tick marks (outer edge)
+            GAUGE_SIZE/2, 20, GAUGE_SIZE/2, 30, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            GAUGE_SIZE - 20, GAUGE_SIZE/2, GAUGE_SIZE - 30, GAUGE_SIZE/2, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            GAUGE_SIZE/2, GAUGE_SIZE - 20, GAUGE_SIZE/2, GAUGE_SIZE - 30, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            20, GAUGE_SIZE/2, 30, GAUGE_SIZE/2, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            
+            // Minor tick marks (shorter)
+            GAUGE_SIZE/2, 25, GAUGE_SIZE/2, 32, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            GAUGE_SIZE - 25, GAUGE_SIZE/2, GAUGE_SIZE - 32, GAUGE_SIZE/2, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            GAUGE_SIZE/2, GAUGE_SIZE - 25, GAUGE_SIZE/2, GAUGE_SIZE - 32, GAUGE_SIZE/2, GAUGE_SIZE/2,
+            25, GAUGE_SIZE/2, 32, GAUGE_SIZE/2, GAUGE_SIZE/2, GAUGE_SIZE/2
         );
         
         svgContainer.getElement().setProperty("innerHTML", svgContent);
         
-        // Score text in center
+        // Add advanced CSS animations
+        svgContainer.getElement().executeJs("""
+            if (!document.querySelector('#advanced-gauge-animations')) {
+                const style = document.createElement('style');
+                style.id = 'advanced-gauge-animations';
+                style.textContent = `
+                    @keyframes gaugeGlow {
+                        0%, 100% { 
+                            filter: drop-shadow(0 0 5px rgba(102, 126, 234, 0.3)); 
+                        }
+                        50% { 
+                            filter: drop-shadow(0 0 15px rgba(102, 126, 234, 0.6)); 
+                        }
+                    }
+                    
+                    @keyframes tickFade {
+                        0%, 100% { opacity: 0.3; }
+                        50% { opacity: 0.8; }
+                    }
+                    
+                    .gauge-svg {
+                        animation: gaugeGlow 3s ease-in-out infinite;
+                    }
+                    
+                    #tick-marks {
+                        animation: tickFade 4s ease-in-out infinite;
+                    }
+                    
+                    .reality-score-gauge {
+                        transition: transform 0.3s ease;
+                    }
+                    
+                    .reality-score-gauge:hover {
+                        transform: scale(1.02);
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            """);
+        
+        // Score text in center - Enhanced visibility
         Div textContainer = new Div();
         textContainer.getStyle().set("position", "absolute");
         textContainer.getStyle().set("top", "50%");
@@ -120,28 +271,56 @@ public class RealityScoreGauge extends Div {
         textContainer.getStyle().set("transform", "translate(-50%, -50%)");
         textContainer.getStyle().set("text-align", "center");
         textContainer.getStyle().set("pointer-events", "none");
+        textContainer.getStyle().set("z-index", "100"); // Much higher z-index
+        textContainer.getStyle().set("width", "120px"); // Fixed width for better centering
+        textContainer.getStyle().set("height", "120px"); // Fixed height
+        textContainer.getStyle().set("display", "flex");
+        textContainer.getStyle().set("flex-direction", "column");
+        textContainer.getStyle().set("justify-content", "center");
+        textContainer.getStyle().set("align-items", "center");
+        
+        // Add a semi-transparent background circle for better text visibility
+        Div backgroundCircle = new Div();
+        backgroundCircle.getStyle().set("position", "absolute");
+        backgroundCircle.getStyle().set("width", "100px");
+        backgroundCircle.getStyle().set("height", "100px");
+        backgroundCircle.getStyle().set("border-radius", "50%");
+        backgroundCircle.getStyle().set("background", "rgba(0, 0, 0, 0.4)");
+        backgroundCircle.getStyle().set("backdrop-filter", "blur(4px)");
+        backgroundCircle.getStyle().set("z-index", "-1");
+        textContainer.add(backgroundCircle);
         
         scoreText = new Span("--");
         scoreText.addClassName("gauge-text");
         scoreText.getStyle().set("display", "block");
-        scoreText.getStyle().set("color", "var(--ink)");
-        scoreText.getStyle().set("font-size", "2.5rem");
-        scoreText.getStyle().set("font-weight", "bold");
+        scoreText.getStyle().set("color", "#ffffff");  // Pure white for maximum contrast
+        scoreText.getStyle().set("font-size", "2.2rem");  // Slightly larger
+        scoreText.getStyle().set("font-weight", "900");  
         scoreText.getStyle().set("line-height", "1");
+        scoreText.getStyle().set("text-shadow", "0 0 20px rgba(255,255,255,0.5), 0 2px 8px rgba(0,0,0,1)"); // Glowing effect
+        scoreText.getStyle().set("letter-spacing", "-0.02em");
+        scoreText.getStyle().set("margin-bottom", "2px");
         
         labelText = new Span("Reality Score™");
         labelText.addClassName("gauge-label");
         labelText.getStyle().set("display", "block");
-        labelText.getStyle().set("color", "var(--muted)");
-        labelText.getStyle().set("font-size", "0.8rem");
-        labelText.getStyle().set("margin-top", "0.25rem");
+        labelText.getStyle().set("color", "#e8ecff");  // High contrast color
+        labelText.getStyle().set("font-size", "0.7rem");
+        labelText.getStyle().set("margin-top", "0px");
+        labelText.getStyle().set("font-weight", "600"); // Bolder
+        labelText.getStyle().set("text-shadow", "0 0 10px rgba(232,236,255,0.5), 0 1px 4px rgba(0,0,0,1)");
+        labelText.getStyle().set("text-transform", "uppercase");
+        labelText.getStyle().set("letter-spacing", "0.05em");
         
         botPercentageText = new Span("");
         botPercentageText.getStyle().set("display", "block");
-        botPercentageText.getStyle().set("color", "var(--bad)");
-        botPercentageText.getStyle().set("font-size", "0.7rem");
-        botPercentageText.getStyle().set("margin-top", "0.25rem");
-        botPercentageText.getStyle().set("font-weight", "bold");
+        botPercentageText.getStyle().set("color", "#ff6b6b");  // Brighter red
+        botPercentageText.getStyle().set("font-size", "0.6rem");
+        botPercentageText.getStyle().set("margin-top", "2px");
+        botPercentageText.getStyle().set("font-weight", "700"); // Bolder
+        botPercentageText.getStyle().set("text-shadow", "0 0 8px rgba(255,107,107,0.5), 0 1px 3px rgba(0,0,0,0.8)");
+        botPercentageText.getStyle().set("text-transform", "uppercase");
+        botPercentageText.getStyle().set("letter-spacing", "0.03em");
         
         textContainer.add(scoreText, labelText, botPercentageText);
         
@@ -154,7 +333,12 @@ public class RealityScoreGauge extends Div {
      */
     private void setInitialScore() {
         scoreText.setText("--");
-        botPercentageText.setText("Ready to analyze");
+        botPercentageText.setText("READY");
+        labelText.setText("Reality Score™");
+        
+        // Set initial colors
+        scoreText.getStyle().set("color", "#a6b0d8"); // Muted for inactive state
+        botPercentageText.getStyle().set("color", "#667eea"); // Themed color for ready state
     }
 
     /**
@@ -180,19 +364,42 @@ public class RealityScoreGauge extends Div {
     }
 
     /**
-     * Set processing state without animations.
+     * Set processing state with enhanced visual feedback.
      */
     public void setProcessing(boolean processing) {
         this.isProcessing = processing;
         
         if (processing) {
             scoreText.setText("••••");
-            botPercentageText.setText("AI agents analyzing...");
-            labelText.setText("Processing");
+            scoreText.getStyle().set("color", "#667eea"); // Processing color
+            botPercentageText.setText("ANALYZING");
+            botPercentageText.getStyle().set("color", "#667eea");
+            labelText.setText("PROCESSING");
+            
+            // Add pulsing animation for processing state
+            scoreText.getElement().executeJs("""
+                this.style.animation = 'pulse 1.5s ease-in-out infinite';
+                if (!document.querySelector('#processing-pulse-animation')) {
+                    const style = document.createElement('style');
+                    style.id = 'processing-pulse-animation';
+                    style.textContent = `
+                        @keyframes pulse {
+                            0%, 100% { opacity: 0.6; transform: scale(1); }
+                            50% { opacity: 1; transform: scale(1.05); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                """);
         } else {
+            // Remove pulsing animation
+            scoreText.getElement().executeJs("this.style.animation = '';");
+            
             if (currentScore > 0) {
                 scoreText.setText(currentScore + "%");
-                botPercentageText.setText(currentBotPercentage + "% bots detected");
+                scoreText.getStyle().set("color", "#ffffff"); // Back to white
+                botPercentageText.setText(currentBotPercentage + "% BOTS");
+                botPercentageText.getStyle().set("color", "#ff6b6b");
                 labelText.setText("Reality Score™");
             } else {
                 setInitialScore();

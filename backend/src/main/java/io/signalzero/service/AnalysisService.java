@@ -473,10 +473,12 @@ public class AnalysisService {
         
         // Bot Detection Agent result
         AgentResult botResult = new AgentResult(analysis.getId(), "bot-detector");
-        botResult.setScore(BigDecimal.valueOf(100).subtract(botPercentage)); // Invert for score
-        botResult.setConfidence(BigDecimal.valueOf(92 + (analysis.getQuery().hashCode() % 8)));
+        BigDecimal botScore = BigDecimal.valueOf(100).subtract(botPercentage);
+        // Ensure score is never negative
+        botResult.setScore(botScore.max(BigDecimal.ZERO));
+        botResult.setConfidence(BigDecimal.valueOf(92 + (Math.abs(analysis.getQuery().hashCode()) % 8)));
         botResult.setStatus(AnalysisStatus.COMPLETE);
-        botResult.setProcessingTimeMs(800 + (analysis.getQuery().hashCode() % 700));
+        botResult.setProcessingTimeMs(800 + (Math.abs(analysis.getQuery().hashCode()) % 700));
         Map<String, Object> botEvidence = new HashMap<>();
         botEvidence.put("bot_accounts", botPercentage.intValue() * 100);
         botEvidence.put("suspicious_patterns", true);
@@ -489,11 +491,11 @@ public class AnalysisService {
         
         // Trend Analysis Agent result
         AgentResult trendResult = new AgentResult(analysis.getId(), "trend-analyzer");
-        BigDecimal trendScore = BigDecimal.valueOf(30 + (analysis.getQuery().hashCode() % 40));
+        BigDecimal trendScore = BigDecimal.valueOf(30 + (Math.abs(analysis.getQuery().hashCode()) % 40));
         trendResult.setScore(trendScore);
-        trendResult.setConfidence(BigDecimal.valueOf(85 + (analysis.getQuery().hashCode() % 10)));
+        trendResult.setConfidence(BigDecimal.valueOf(85 + (Math.abs(analysis.getQuery().hashCode()) % 10)));
         trendResult.setStatus(AnalysisStatus.COMPLETE);
-        trendResult.setProcessingTimeMs(1200 + (analysis.getQuery().hashCode() % 800));
+        trendResult.setProcessingTimeMs(1200 + (Math.abs(analysis.getQuery().hashCode()) % 800));
         Map<String, Object> trendEvidence = new HashMap<>();
         trendEvidence.put("trend_velocity", trendScore.intValue() > 70 ? "Organic growth" : 
                          trendScore.intValue() > 40 ? "Accelerated pattern" : "Artificial spike");
@@ -505,10 +507,10 @@ public class AnalysisService {
         
         // Score Aggregator result (calculates final Reality Score)
         AgentResult aggregatorResult = new AgentResult(analysis.getId(), "score-aggregator");
-        aggregatorResult.setScore(realityScore);
-        aggregatorResult.setConfidence(BigDecimal.valueOf(90 + (analysis.getQuery().hashCode() % 8)));
+        aggregatorResult.setScore(realityScore.max(BigDecimal.ZERO)); // Ensure score is never negative
+        aggregatorResult.setConfidence(BigDecimal.valueOf(90 + (Math.abs(analysis.getQuery().hashCode()) % 8)));
         aggregatorResult.setStatus(AnalysisStatus.COMPLETE);
-        aggregatorResult.setProcessingTimeMs(300 + (analysis.getQuery().hashCode() % 200));
+        aggregatorResult.setProcessingTimeMs(300 + (Math.abs(analysis.getQuery().hashCode()) % 200));
         Map<String, Object> aggregatorEvidence = new HashMap<>();
         aggregatorEvidence.put("weighted_calculation", "Bot: 40%, Trend: 30%, Review: 20%, Promotion: 10%");
         aggregatorEvidence.put("bot_weight", 0.4);
